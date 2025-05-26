@@ -73,14 +73,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-      favoritePlaces,
+        favoritePlaces,
       addFavoritePlace,
       removeFavoritePlace,
       clearAllFavorites,
       archiveFavorites,
       archivedLists,
-      selectedPlace,
-      setSelectedPlace,
+        selectedPlace,
+        setSelectedPlace,
       searchResults,
       setSearchResults,
       dontAskForNote,

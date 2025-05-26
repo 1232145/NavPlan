@@ -10,7 +10,7 @@ const ArchivedListsPage: React.FC = () => {
   const navigate = useNavigate();
 
   const onBack = () => {
-    navigate('/');
+    navigate('/map');
   };
 
   return (

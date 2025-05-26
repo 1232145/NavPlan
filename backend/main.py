@@ -1,7 +1,7 @@
 # To run the backend on localhost:8000, use:
 # uvicorn main:app --host localhost --port 8000 --reload
 import os
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from google.oauth2 import id_token
@@ -65,6 +65,6 @@ async def me(request: Request):
         raise HTTPException(status_code=401, detail="Invalid session")
 
 @app.post("/api/logout")
-async def logout(response):
+async def logout(response: Response):
     response.delete_cookie("session")
     return {"ok": True}
