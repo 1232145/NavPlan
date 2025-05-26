@@ -4,7 +4,7 @@ import './index.css';
 import confetti from 'canvas-confetti';
 import { Button } from '../Button';
 
-interface PlaceCardProps {
+export interface PlaceCardProps {
   place: Place;
   onAddToFavorites?: (place: Place) => void;
   onRemoveFavorite?: (place: Place) => void;

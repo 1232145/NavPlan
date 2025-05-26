@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import './index.css';
 import { Button } from '../../components/Button';
+import { useNavigate } from 'react-router-dom';
 
-interface ArchivedListsPageProps {
-  onBack: () => void;
-}
-
-export const ArchivedListsPage: React.FC<ArchivedListsPageProps> = ({ onBack }) => {
+const ArchivedListsPage: React.FC = () => {
   const { archivedLists } = useAppContext();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const onBack = () => {
+    navigate('/');
+  };
 
   return (
     <div className="archived-lists-page">
@@ -52,4 +54,6 @@ export const ArchivedListsPage: React.FC<ArchivedListsPageProps> = ({ onBack }) 
       )}
     </div>
   );
-}; 
+};
+
+export default ArchivedListsPage; 

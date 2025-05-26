@@ -1,8 +1,14 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api';
 import { useAppContext } from '../../context/AppContext';
-import { Place, MapContainerProps } from '../../types';
+import { Place, Coordinates } from '../../types';
+import { TabControlProps } from '../ItineraryPanel';
 import './index.css';
+
+export interface MapContainerProps extends TabControlProps {
+  mapCenter: Coordinates;
+  setMapCenter: (center: Coordinates) => void;
+}
 
 const containerStyle = {
   width: '100%',
@@ -177,7 +183,7 @@ const MapLoading: React.FC = () => (
 );
 
 // --- Main Component ---
-export const MapContainer: React.FC<MapContainerProps> = (props) => {
+const MapContainer: React.FC<MapContainerProps> = (props) => {
   const logic = useMapContainerLogic(props);
   const markerClickedRef = useRef(false);
 
@@ -216,3 +222,5 @@ export const MapContainer: React.FC<MapContainerProps> = (props) => {
     </div>
   );
 };
+
+export default MapContainer;

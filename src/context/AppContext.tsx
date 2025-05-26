@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { Place, ArchivedList } from '../types';
+import axios from 'axios';
 
 interface AppContextType {
   favoritePlaces: Place[];
@@ -14,6 +15,10 @@ interface AppContextType {
   setSearchResults: React.Dispatch<React.SetStateAction<Place[]>>;
   dontAskForNote: boolean;
   setDontAskForNote: React.Dispatch<React.SetStateAction<boolean>>;
+  user: any;
+  setUser: React.Dispatch<React.SetStateAction<any>>;
+  sessionExpired: boolean;
+  checkSession: () => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -24,17 +29,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [dontAskForNote, setDontAskForNote] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
-  useEffect(() => {
-    const stored = localStorage.getItem('archivedLists');
-    if (stored) {
-      setArchivedLists(JSON.parse(stored));
+  // Provide a method to check session, to be called from components
+  const checkSession = async (): Promise<boolean> => {
+    try {
+      const res = await axios.get('http://localhost:8000/api/me', { withCredentials: true });
+      setUser(res.data.user);
+      setSessionExpired(false);
+      return true;
+    } catch (e) {
+      setUser(null);
+      setSessionExpired(true);
+      return false;
     }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('archivedLists', JSON.stringify(archivedLists));
-  }, [archivedLists]);
+  };
 
   const addFavoritePlace = (place: Place) => {
     setFavoritePlaces((prev) => (prev.some(p => p.id === place.id) ? prev : [...prev, place]));
@@ -75,6 +85,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setSearchResults,
       dontAskForNote,
       setDontAskForNote,
+      user,
+      setUser,
+      sessionExpired,
+      checkSession,
     }}>
       {children}
     </AppContext.Provider>

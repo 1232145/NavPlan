@@ -4,7 +4,7 @@ import './index.css';
 export type ButtonVariant = 'primary' | 'danger' | 'default';
 export type ButtonSize = 'md' | 'sm';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: ButtonVariant;
     size?: ButtonSize;
     fullWidth?: boolean;

@@ -5,7 +5,7 @@ import { SearchBar } from '../../components/SearchBar';
 import { Coordinates, Place } from '../../types';
 import { Button } from '../../components/Button';
 
-interface HeaderProps {
+export interface HeaderProps {
   mapCenter?: Coordinates;
   onMyListsClick: () => void;
   onLogoClick: () => void;
@@ -17,7 +17,7 @@ function dispatchSearchResults(places: Place[]) {
 }
 
 // --- Main Component ---
-export const Header: React.FC<HeaderProps> = ({ mapCenter, onMyListsClick, onLogoClick }) => {
+const Header: React.FC<HeaderProps> = ({ mapCenter, onMyListsClick, onLogoClick }) => {
   return (
     <header className="header">
       <div className="header-content">
@@ -37,3 +37,5 @@ export const Header: React.FC<HeaderProps> = ({ mapCenter, onMyListsClick, onLog
     </header>
   );
 };
+
+export default Header;

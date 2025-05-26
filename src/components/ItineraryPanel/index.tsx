@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Place, TabControlProps } from '../../types';
+import { Place } from '../../types';
 import './index.css';
 import { PlaceCard } from '../../components/PlaceCard';
 import { Button } from '../../components/Button';
@@ -11,6 +11,11 @@ import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
+
+export interface TabControlProps {
+  activeTab: 'saved' | 'search';
+  setActiveTab: (tab: 'saved' | 'search') => void;
+}
 
 function useItineraryPanelLogic(activeTab: 'saved' | 'search', setActiveTab: (tab: 'saved' | 'search') => void) {
   const { favoritePlaces, removeFavoritePlace, addFavoritePlace, clearAllFavorites, archiveFavorites, searchResults, setSearchResults } = useAppContext();
@@ -236,7 +241,7 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
   );
 };
 
-export const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) => {
+const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) => {
   const { favoritePlaces, removeFavoritePlace, addFavoritePlace, searchResults, handleTabChange, selectedPlace, clearAllFavorites, archiveFavorites } = useItineraryPanelLogic(activeTab, setActiveTab);
   return (
     <div className="itinerary-panel expanded">
@@ -267,3 +272,5 @@ export const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActive
     </div>
   );
 };
+
+export default ItineraryPanel;

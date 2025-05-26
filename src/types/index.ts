@@ -31,13 +31,3 @@ export interface ArchivedList {
   places: Place[];
   note?: string;
 }
-
-export interface TabControlProps {
-  activeTab: 'saved' | 'search';
-  setActiveTab: (tab: 'saved' | 'search') => void;
-}
-
-export interface MapContainerProps extends TabControlProps {
-  mapCenter: Coordinates;
-  setMapCenter: (center: Coordinates) => void;
-}

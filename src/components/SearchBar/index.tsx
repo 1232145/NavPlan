@@ -5,7 +5,7 @@ import { MapService } from '../../services/mapService';
 import { Place, Coordinates } from '../../types';
 import { Button } from '../Button';
 
-interface SearchBarProps {
+export interface SearchBarProps {
   onSearchResults?: (places: Place[]) => void;
   mapCenter?: Coordinates;
 }

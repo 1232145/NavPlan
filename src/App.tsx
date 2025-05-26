@@ -1,34 +1,61 @@
-import { useState } from 'react';
-import { MapContainer } from './pages/MapContainer';
-import { Header } from './layout/Header';
-import { ItineraryPanel } from './pages/ItineraryPanel';
-import { AppProvider } from './context/AppContext';
-import { ArchivedListsPage } from './pages/ArchivedListsPage';
+import { useEffect } from 'react';
+import { AppProvider, useAppContext } from './context/AppContext';
+import MapPage from './pages/MapPage';
+import ArchivedListsPage from './pages/ArchivedListsPage';
+import LandingPage from './pages/LandingPage';
+import ErrorPage from './pages/ErrorPage';
+import MainLayout from './layout/MainLayout';
 import './styles/App.css';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom';
+
+function SessionGuard({ children }: { children: React.ReactNode }) {
+  const { sessionExpired, checkSession, setUser } = useAppContext();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const isError = location.pathname === '/error';
+    if (!isError) {
+      // Initial check
+      checkSession();
+      // Periodic check every 30 minutes
+      interval = setInterval(() => {
+        checkSession();
+      }, 30 * 60 * 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [location.pathname, checkSession]);
+
+  useEffect(() => {
+    if (sessionExpired && location.pathname !== '/login') {
+      setUser(null);
+      navigate('/login');
+    }
+  }, [sessionExpired, navigate, location.pathname, setUser]);
+
+  return <>{children}</>;
+}
 
 function App() {
-  const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 });
-  const [activeTab, setActiveTab] = useState<'saved' | 'search'>('search');
-  const [view, setView] = useState<'map' | 'lists'>('map');
   return (
     <AppProvider>
-      <div className="app">
-        <Header
-          mapCenter={mapCenter}
-          onMyListsClick={() => setView('lists')}
-          onLogoClick={() => setView('map')}
-        />
-        <main className="main-content">
-          {view === 'map' ? (
-            <>
-              <MapContainer mapCenter={mapCenter} setMapCenter={setMapCenter} activeTab={activeTab} setActiveTab={setActiveTab} />
-              <ItineraryPanel activeTab={activeTab} setActiveTab={setActiveTab} />
-            </>
-          ) : (
-            <ArchivedListsPage onBack={() => setView('map')} />
-          )}
-        </main>
-      </div>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/error" element={<ErrorPage />} />
+          <Route path="/login" element={<LandingPage />} />
+          <Route element={<SessionGuard>
+            <MainLayout>
+              <Outlet />
+            </MainLayout>
+          </SessionGuard>}>
+            <Route path="/" element={<MapPage />} />
+            <Route path="/lists" element={<ArchivedListsPage />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
     </AppProvider>
   );
 }
