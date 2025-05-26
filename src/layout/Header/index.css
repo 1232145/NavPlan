@@ -1,0 +1,64 @@
+/* Modern, minimal header styles */
+.header {
+  background-color: var(--color-primary-600);
+  color: white;
+  box-shadow: var(--shadow-md);
+  z-index: 10;
+  transition: height var(--transition-normal);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-4) var(--space-6);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.logo h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.welcome-banner {
+  background-color: var(--color-primary-700);
+  padding: var(--space-6) var(--space-6) var(--space-8);
+  text-align: center;
+}
+
+.welcome-banner h2 {
+  font-size: 2rem;
+  margin-bottom: var(--space-2);
+  font-weight: 700;
+}
+
+.welcome-banner p {
+  font-size: 1.125rem;
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .header-content {
+    padding: var(--space-3) var(--space-4);
+  }
+  .logo h1 {
+    font-size: 1.25rem;
+  }
+  .welcome-banner {
+    padding: var(--space-4) var(--space-4) var(--space-6);
+  }
+  .welcome-banner h2 {
+    font-size: 1.5rem;
+  }
+  .welcome-banner p {
+    font-size: 1rem;
+  }
+}

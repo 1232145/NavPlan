@@ -1,0 +1,38 @@
+.place-card {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 16px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+    max-width: 480px;
+    width: 100%;
+  }
+  
+  .place-card img {
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  
+  .place-card h3 {
+    margin: 0 0 4px 0;
+    font-size: 20px;
+  }
+  
+  .place-card p {
+    margin: 0 0 6px 0;
+    color: #555;
+    font-size: 15px;
+  }
+  
+  .place-card .rating {
+    font-size: 14px;
+    color: #f7b500;
+    font-weight: 600;
+  }
