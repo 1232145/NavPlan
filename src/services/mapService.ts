@@ -1,4 +1,4 @@
-import { Place, RouteSegment, Coordinates } from '../types';
+import { Place, Coordinates } from '../types';
 
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const GOOGLE_PLACES_BASE = 'https://places.googleapis.com/v1';
@@ -75,34 +75,6 @@ export const MapService = {
     if (!res.ok) return null;
     const data = await res.json();
     return mapGooglePlaceToPlace(data);
-  },
-
-  calculateRoute: async (
-    origin: Coordinates,
-    destination: Coordinates,
-    mode: 'DRIVING' | 'WALKING' | 'BICYCLING' | 'TRANSIT' = 'DRIVING',
-  ): Promise<RouteSegment | null> => {
-    // Still mock for now
-    return {
-      origin: {
-        id: 'origin',
-        name: 'Origin',
-        location: origin,
-        address: 'Origin Address',
-        placeType: 'point',
-      },
-      destination: {
-        id: 'destination',
-        name: 'Destination',
-        location: destination,
-        address: 'Destination Address',
-        placeType: 'point',
-      },
-      distance: '2.5 km',
-      duration: '30 mins',
-      mode,
-      polyline: 'mock_polyline_string',
-    };
   },
 };
 

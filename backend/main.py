@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "1075078781081-vei8h3oce8dgcvd8405ijuatv5ekgc5j.apps.googleusercontent.com")
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 
 @app.post("/api/auth/google")
 async def google_auth(request: Request):

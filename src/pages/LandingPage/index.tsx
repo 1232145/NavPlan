@@ -4,6 +4,8 @@ import { useAppContext } from '../../context/AppContext';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
 export const LandingPage: React.FC<{ onGoogleSignIn?: (user: any) => void }> = () => {
   const buttonDiv = useRef<HTMLDivElement>(null);
   const [sdkLoaded, setSdkLoaded] = useState(false);
@@ -30,7 +32,7 @@ export const LandingPage: React.FC<{ onGoogleSignIn?: (user: any) => void }> = (
         setSdkError(false);
         // @ts-ignore
         window.google.accounts.id.initialize({
-          client_id: '1075078781081-vei8h3oce8dgcvd8405ijuatv5ekgc5j.apps.googleusercontent.com',
+          client_id: GOOGLE_CLIENT_ID,
           callback: (response: any) => {
             setAuthError(null);
             handleGoogleSignIn(response.credential);
