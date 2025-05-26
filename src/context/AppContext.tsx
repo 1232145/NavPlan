@@ -17,7 +17,6 @@ interface AppContextType {
   setDontAskForNote: React.Dispatch<React.SetStateAction<boolean>>;
   user: any;
   setUser: React.Dispatch<React.SetStateAction<any>>;
-  sessionExpired: boolean;
   checkSession: () => Promise<boolean>;
 }
 
@@ -30,18 +29,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [dontAskForNote, setDontAskForNote] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [sessionExpired, setSessionExpired] = useState(false);
 
   // Provide a method to check session, to be called from components
   const checkSession = async (): Promise<boolean> => {
     try {
       const res = await axios.get('http://localhost:8000/api/me', { withCredentials: true });
       setUser(res.data.user);
-      setSessionExpired(false);
       return true;
     } catch (e) {
       setUser(null);
-      setSessionExpired(true);
       return false;
     }
   };
@@ -73,21 +69,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   return (
     <AppContext.Provider value={{
-        favoritePlaces,
+      favoritePlaces,
       addFavoritePlace,
       removeFavoritePlace,
       clearAllFavorites,
       archiveFavorites,
       archivedLists,
-        selectedPlace,
-        setSelectedPlace,
+      selectedPlace,
+      setSelectedPlace,
       searchResults,
       setSearchResults,
       dontAskForNote,
       setDontAskForNote,
       user,
       setUser,
-      sessionExpired,
       checkSession,
     }}>
       {children}

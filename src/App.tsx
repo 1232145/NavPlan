@@ -5,29 +5,22 @@ import ArchivedListsPage from './pages/ArchivedListsPage';
 import LandingPage from './pages/LandingPage';
 import ErrorPage from './pages/ErrorPage';
 import MainLayout from './layout/MainLayout';
-import './styles/App.css';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
+import './styles/App.css';
 
 function SessionGuard({ children }: { children: React.ReactNode }) {
-  const { sessionExpired, checkSession, setUser } = useAppContext();
+  const { user, checkSession, setUser } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Check session on route change (except error page)
   useEffect(() => {
-    const isError = location.pathname === '/error';
-    console.log('Checking session on route change');
-    if (!isError) {
-      checkSession();
-    }
+    checkSession();
   }, [location.pathname]);
 
-  // Set up periodic session check only once on mount
+  // Set up periodic session check
   useEffect(() => {
     intervalRef.current = setInterval(() => {
-      console.log('Checking session...');
       checkSession();
     }, 30 * 60 * 1000);
     return () => {
@@ -39,32 +32,45 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (sessionExpired && location.pathname !== '/login') {
+    if (!user && location.pathname !== '/') {
       setUser(null);
-      navigate('/login');
+      navigate('/');
     }
-  }, [sessionExpired, navigate, location.pathname, setUser]);
+  }, [user, navigate, location.pathname, setUser]);
 
   return <>{children}</>;
+}
+
+function AppRoutes() {
+  const { user } = useAppContext();
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="*" element={<LandingPage />} />
+      </Routes>
+    );
+  }
+  return (
+    <Routes>
+      <Route path="/error" element={<ErrorPage />} />
+      <Route element={<SessionGuard>
+        <MainLayout>
+          <Outlet />
+        </MainLayout>
+      </SessionGuard>}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/map" element={<MapPage />} />
+        <Route path="/lists" element={<ArchivedListsPage />} />
+      </Route>
+    </Routes>
+  );
 }
 
 function App() {
   return (
     <AppProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/error" element={<ErrorPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route element={<SessionGuard>
-            <MainLayout>
-              <Outlet />
-            </MainLayout>
-          </SessionGuard>}>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/map" element={<MapPage />} />
-            <Route path="/lists" element={<ArchivedListsPage />} />
-          </Route>
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </AppProvider>
   );
