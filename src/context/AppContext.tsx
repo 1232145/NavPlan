@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useState } from 'react';
-import { Place, ArchivedList } from '../types';
-import axios from 'axios';
+import { Place } from '../types';
+import api from '../services/api/axios';
+import { archivedListService } from '../services/archivedListService';
 
 interface AppContextType {
   favoritePlaces: Place[];
   addFavoritePlace: (place: Place) => void;
   removeFavoritePlace: (id: string) => void;
   clearAllFavorites: () => void;
-  archiveFavorites: (name?: string, note?: string) => void;
-  archivedLists: ArchivedList[];
+  archiveFavorites: (name?: string, note?: string) => Promise<void>;
   selectedPlace: Place | null;
   setSelectedPlace: (place: Place | null) => void;
   searchResults: Place[];
@@ -24,16 +24,14 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [favoritePlaces, setFavoritePlaces] = useState<Place[]>([]);
-  const [archivedLists, setArchivedLists] = useState<ArchivedList[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [dontAskForNote, setDontAskForNote] = useState(false);
   const [user, setUser] = useState<any>(null);
 
-  // Provide a method to check session, to be called from components
   const checkSession = async (): Promise<boolean> => {
     try {
-      const res = await axios.get('http://localhost:8000/api/me', { withCredentials: true });
+      const res = await api.get('/me');
       setUser(res.data.user);
       return true;
     } catch (e) {
@@ -54,17 +52,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setFavoritePlaces([]);
   };
 
-  const archiveFavorites = (name?: string, note?: string) => {
+  const archiveFavorites = async (name?: string, note?: string) => {
     if (favoritePlaces.length === 0) return;
-    const newArchive: ArchivedList = {
-      id: Date.now().toString(),
-      name: name || `List ${new Date().toLocaleString()}`,
-      date: new Date().toLocaleString(),
-      places: favoritePlaces,
-      note,
-    };
-    setArchivedLists((prev) => [newArchive, ...prev]);
-    setFavoritePlaces([]);
+    try {
+      await archivedListService.createList(
+        name || `List ${new Date().toLocaleString()}`,
+        favoritePlaces,
+        note
+      );
+      setFavoritePlaces([]);
+    } catch (error) {
+      console.error('Failed to archive favorites:', error);
+      throw error;
+    }
   };
 
   return (
@@ -74,7 +74,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       removeFavoritePlace,
       clearAllFavorites,
       archiveFavorites,
-      archivedLists,
       selectedPlace,
       setSelectedPlace,
       searchResults,
