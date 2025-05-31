@@ -77,7 +77,7 @@ export const LandingPage: React.FC = () => {
     return (
       <div className="landing-page-root">
         <div className="landing-page-content">
-          <h1 className="landing-page-logo">Nav Plan</h1>
+          <h1 className="landing-page-title">Help navigate plan for your perfect trip</h1>
           {loading && <div style={{ marginTop: 24 }}>Loading Google Login...</div>}
           {sdkError && !sdkLoaded && (
             <div style={{ color: 'red', marginTop: 24 }}>
@@ -96,12 +96,9 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="landing-page-root">
       <div className="landing-page-content">
-        <h1 className="landing-page-logo">Nav Plan</h1>
+        <h1 className="landing-page-title">Help navigate plan for your perfect trip</h1>
         <button className="landing-login-btn" onClick={() => navigate('/map')}>
           Go to Map
-        </button>
-        <button className="landing-login-btn" onClick={handleSignOut} style={{ background: '#d32f2f' }}>
-          Sign Out
         </button>
       </div>
     </div>
