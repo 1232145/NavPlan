@@ -1,10 +1,35 @@
 /* Modern, minimal header styles */
 .header {
-  background-color: var(--color-primary-600);
+  position: absolute;
+  top: 0px;
+  left: 50px;
+  right: 50px;
+  background-color: transparent;
   color: white;
-  box-shadow: var(--shadow-md);
   z-index: 10;
-  transition: height var(--transition-normal);
+}
+
+.header.map-page {
+  color: black;
+  top: 6px;
+}
+
+.header.map-page .logo {
+  margin-left: -45px;
+}
+
+.header.map-page .logo h1 {
+  color: black;
+}
+
+.header.map-page .btn {
+  color: black;
+  border-color: rgba(0, 0, 0, 0.3);
+}
+
+.header.map-page .btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.5);
 }
 
 .header-content {
@@ -12,6 +37,11 @@
   justify-content: space-between;
   align-items: center;
   padding: var(--space-4) var(--space-6);
+}
+
+.header.map-page .search-container {
+  position: absolute;
+  left: 43%;
 }
 
 .logo {
@@ -23,6 +53,19 @@
 .logo h1 {
   font-size: 1.5rem;
   font-weight: 700;
+  color: white;
+}
+
+/* Button styles */
+.header .btn {
+  background: transparent;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.header .btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .welcome-banner {

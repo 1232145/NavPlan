@@ -250,7 +250,7 @@ const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) 
           <Button
             variant={activeTab === 'search' ? 'primary' : 'default'}
             size="md"
-            style={{ borderRadius: '6px 6px 0 0', marginRight: 2 }}
+            style={{ borderRadius: '12px', marginRight: 2 }}
             onClick={() => handleTabChange('search')}
           >
             Search Results
@@ -258,7 +258,7 @@ const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) 
           <Button
             variant={activeTab === 'saved' ? 'primary' : 'default'}
             size="md"
-            style={{ borderRadius: '6px 6px 0 0' }}
+            style={{ borderRadius: '12px' }}
             onClick={() => handleTabChange('saved')}
           >
             Saved Places

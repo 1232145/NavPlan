@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import './index.css';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
-import axios from 'axios';
+import api from '../../services/api/axios';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -58,11 +58,7 @@ export const LandingPage: React.FC = () => {
 
   async function handleGoogleSignIn(credential: string) {
     try {
-      const res = await axios.post(
-        'http://localhost:8000/api/auth/google',
-        { token: credential },
-        { withCredentials: true }
-      );
+      const res = await api.post('/auth/google', { token: credential });
       setUser(res.data.user);
       navigate('/');
     } catch (err) {
@@ -72,7 +68,7 @@ export const LandingPage: React.FC = () => {
   }
 
   const handleSignOut = async () => {
-    await axios.post('http://localhost:8000/api/logout', {}, { withCredentials: true });
+    await api.post('/logout');
     setUser(null);
     navigate('/');
   };
@@ -81,7 +77,7 @@ export const LandingPage: React.FC = () => {
     return (
       <div className="landing-page-root">
         <div className="landing-page-content">
-          <h1 className="landing-page-logo">Nav Plan</h1>
+          <h1 className="landing-page-title">Help navigate plan for your perfect trip</h1>
           {loading && <div style={{ marginTop: 24 }}>Loading Google Login...</div>}
           {sdkError && !sdkLoaded && (
             <div style={{ color: 'red', marginTop: 24 }}>
@@ -100,12 +96,9 @@ export const LandingPage: React.FC = () => {
   return (
     <div className="landing-page-root">
       <div className="landing-page-content">
-        <h1 className="landing-page-logo">Nav Plan</h1>
+        <h1 className="landing-page-title">Help navigate plan for your perfect trip</h1>
         <button className="landing-login-btn" onClick={() => navigate('/map')}>
           Go to Map
-        </button>
-        <button className="landing-login-btn" onClick={handleSignOut} style={{ background: '#d32f2f' }}>
-          Sign Out
         </button>
       </div>
     </div>
