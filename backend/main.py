@@ -13,6 +13,7 @@ from db import get_database, db_manager
 from pymongo.errors import PyMongoError
 import logging
 from pydantic import BaseModel
+from bson.objectid import ObjectId
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -100,14 +101,20 @@ async def create_archived_list(
 ):
     try:
         with get_database() as db:
-            result = db.archived_lists.insert_one({
-                "user_id": user["id"],
-                "name": archived_list.name,
-                "places": archived_list.places,
-                "note": archived_list.note,
-                "date": datetime.utcnow()
-            })
-            return {"id": str(result.inserted_id)}
+            result = db.archived_lists.update_one(
+                {"user_id": user["id"]},
+                {"$push": {
+                    "lists": {
+                        "_id": str(ObjectId()),
+                        "name": archived_list.name,
+                        "places": archived_list.places,
+                        "note": archived_list.note,
+                        "date": datetime.utcnow()
+                    }
+                }},
+                upsert=True
+            )
+            return {"id": str(result.upserted_id) if result.upserted_id else "updated"}
     except PyMongoError as e:
         logger.error(f"Database error in create_archived_list: {e}")
         raise HTTPException(status_code=500, detail="Database error")
@@ -121,20 +128,17 @@ async def get_archived_lists(
 ):
     try:
         with get_database() as db:
-            # Use find with projection to only get needed fields
-            cursor = db.archived_lists.find(
-                {"user_id": user["id"]},
-                {"_id": 1, "name": 1, "places": 1, "note": 1, "date": 1}
-            ).sort("date", -1)  # Sort by date descending
-            
-            lists = list(cursor)
+            user_lists = db.archived_lists.find_one({"user_id": user["id"]})
+            if not user_lists:
+                return []
+            lists = user_lists.get("lists", [])
             return [{
-                "id": str(list["_id"]),
-                "name": list["name"],
-                "places": list["places"],
-                "note": list.get("note"),
-                "date": list["date"].isoformat()
-            } for list in lists]
+                "id": list_item["_id"],
+                "name": list_item["name"],
+                "places": list_item["places"],
+                "note": list_item.get("note"),
+                "date": list_item["date"].isoformat()
+            } for list_item in lists]
     except PyMongoError as e:
         logger.error(f"Database error in get_archived_lists: {e}")
         raise HTTPException(status_code=500, detail="Database error")
@@ -151,11 +155,11 @@ async def update_archived_list(
     try:
         with get_database() as db:
             result = db.archived_lists.update_one(
-                {"_id": list_id, "user_id": user["id"]},
+                {"user_id": user["id"], "lists._id": list_id},
                 {"$set": {
-                    "name": archived_list.name,
-                    "places": archived_list.places,
-                    "note": archived_list.note
+                    "lists.$.name": archived_list.name,
+                    "lists.$.places": archived_list.places,
+                    "lists.$.note": archived_list.note
                 }}
             )
             
@@ -177,9 +181,12 @@ async def delete_archived_list(
 ):
     try:
         with get_database() as db:
-            result = db.archived_lists.delete_one({"_id": list_id, "user_id": user["id"]})
+            result = db.archived_lists.update_one(
+                {"user_id": user["id"]},
+                {"$pull": {"lists": {"_id": list_id}}}
+            )
             
-            if result.deleted_count == 0:
+            if result.modified_count == 0:
                 raise HTTPException(status_code=404, detail="List not found")
             
             return {"ok": True}

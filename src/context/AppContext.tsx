@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Place } from '../types';
 import api from '../services/api/axios';
 import { archivedListService } from '../services/archivedListService';
@@ -28,6 +28,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [dontAskForNote, setDontAskForNote] = useState(false);
   const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const initSessionCheck = async () => {
+      await checkSession();
+    };
+    initSessionCheck();
+  }, []);
 
   const checkSession = async (): Promise<boolean> => {
     try {
