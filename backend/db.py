@@ -58,15 +58,19 @@ class DatabaseManager:
 
     def _create_indexes(self):
         try:
-            # Create compound index for user_id and date for efficient queries
+            # Create index for user_id for efficient queries
             self._db.archived_lists.create_index([
-                ("user_id", ASCENDING),
-                ("date", ASCENDING)
+                ("user_id", ASCENDING)
             ])
             
-            # Create text index for name field for search functionality
+            # Create text index for name field within lists array for search functionality
             self._db.archived_lists.create_index([
-                ("name", "text")
+                ("lists.name", "text")
+            ])
+            
+            # Create index for date within lists array for sorting
+            self._db.archived_lists.create_index([
+                ("lists.date", ASCENDING)
             ])
             
             logger.info("Successfully created database indexes")
