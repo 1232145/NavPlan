@@ -1,9 +1,12 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { useJsApiLoader, GoogleMap, Marker } from '@react-google-maps/api';
+import { useJsApiLoader, GoogleMap, Marker, InfoWindow, Libraries } from '@react-google-maps/api';
 import { useAppContext } from '../../context/AppContext';
 import { Place, Coordinates } from '../../types';
 import { TabControlProps } from '../ItineraryPanel';
 import './index.css';
+
+// Define libraries array outside component to prevent reloading
+const GOOGLE_MAP_LIBRARIES: Libraries = ['places'];
 
 export interface MapContainerProps extends TabControlProps {
   mapCenter: Coordinates;
@@ -14,8 +17,6 @@ const containerStyle = {
   width: '100%',
   height: '100%',
 };
-
-const GOOGLE_MAP_LIBRARIES: any[] = ['places'];
 
 // --- Custom Hook for Logic ---
 function useMapContainerLogic({ mapCenter, setMapCenter, activeTab, setActiveTab }: MapContainerProps) {
@@ -166,9 +167,8 @@ const NearbyMarkers: React.FC<{ nearbyPlaces: Place[]; setSelectedPlace: (p: Pla
             map.panTo(place.location);
             map.setZoom(16);
           }
-          // If the place is a favorite, highlight in saved tab, else in search tab
-          const isFavorite = favoritePlaces?.some(fav => fav.id === place.id);
-          window.dispatchEvent(new CustomEvent('select-place', { detail: { place, tab: isFavorite ? 'saved' : 'search' } }));
+          // Highlight the place in the current tab without switching tabs
+          window.dispatchEvent(new CustomEvent('select-place', { detail: { place, tab: 'search' } }));
         }}
       />
     ))}
@@ -181,6 +181,47 @@ const MapLoading: React.FC = () => (
     <p>Loading map...</p>
   </div>
 );
+
+const PlaceInfoWindow: React.FC<{ place: Place; onClose: () => void; onAddToFavorites: () => void; activeTab: 'saved' | 'search'; }> = ({ place, onClose, onAddToFavorites, activeTab }) => {
+  return (
+    <div style={{ maxWidth: '300px', padding: '10px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.3)' }}>
+      <h3 style={{ marginTop: '0', marginBottom: '10px' }}>{place.name}</h3>
+      {place.photos && place.photos.length > 0 && (
+        <div style={{ marginBottom: '10px' }}>
+          <img 
+            src={place.photos[0]} 
+            alt={place.name} 
+            style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px' }} 
+          />
+        </div>
+      )}
+      <p>{place.address}</p>
+      {place.rating && (
+        <p>Rating: {place.rating} ({place.userRatingCount || 0} reviews)</p>
+      )}
+      {place.openingHours && (
+        <p>Currently: {place.openingHours.open ? 'Open' : 'Closed'}</p>
+      )}
+      {place.website && (
+        <p><a href={place.website} target="_blank" rel="noopener noreferrer">Website</a></p>
+      )}
+      {place.phoneNumber && (
+        <p>Phone: {place.phoneNumber}</p>
+      )}
+      {place.note && (
+        <p>Note: {place.note}</p>
+      )}
+      {activeTab === 'search' && (
+        <button 
+          onClick={onAddToFavorites}
+          style={{ marginTop: '10px', padding: '5px 10px', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', width: '100%' }}
+        >
+          Add to Favorites
+        </button>
+      )}
+    </div>
+  );
+};
 
 // --- Main Component ---
 const MapContainer: React.FC<MapContainerProps> = (props) => {
@@ -217,6 +258,26 @@ const MapContainer: React.FC<MapContainerProps> = (props) => {
         )}
         {logic.activeTab === 'search' && logic.nearbyPlaces.length > 0 && (
           <NearbyMarkers nearbyPlaces={logic.nearbyPlaces} setSelectedPlace={logic.setSelectedPlace} markerClickedRef={markerClickedRef} map={logic.map} favoritePlaces={logic.favoritePlaces} />
+        )}
+        {logic.selectedPlace && (
+          <InfoWindow
+            position={logic.selectedPlace.location}
+            onCloseClick={() => {
+              logic.setSelectedPlace(null);
+              window.dispatchEvent(new CustomEvent('clear-selected-place'));
+            }}
+            options={{ pixelOffset: new window.google.maps.Size(0, -40), disableAutoPan: false }}
+          >
+            <PlaceInfoWindow 
+              place={logic.selectedPlace} 
+              onClose={() => {
+                logic.setSelectedPlace(null);
+                window.dispatchEvent(new CustomEvent('clear-selected-place'));
+              }} 
+              onAddToFavorites={logic.handleAddToFavorites} 
+              activeTab={logic.activeTab} 
+            />
+          </InfoWindow>
         )}
       </GoogleMap>
     </div>
