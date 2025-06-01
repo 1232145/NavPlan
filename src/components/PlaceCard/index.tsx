@@ -3,19 +3,21 @@ import { Place } from '../../types';
 import './index.css';
 import confetti from 'canvas-confetti';
 import { Button } from '../Button';
+import { Heart } from 'lucide-react';
 
 export interface PlaceCardProps {
   place: Place;
   onAddToFavorites?: (place: Place) => void;
   onRemoveFavorite?: (place: Place) => void;
+  isSaved?: boolean;
 }
 
-export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, onRemoveFavorite }) => {
+export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, onRemoveFavorite, isSaved = false }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [showFullNote, setShowFullNote] = useState(false);
 
   const handleAddToFavorites = () => {
-    if (onAddToFavorites) {
+    if (onAddToFavorites && !isSaved) {
       onAddToFavorites(place);
       // Firework/confetti effect
       if (cardRef.current) {
@@ -95,13 +97,14 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, o
         )}
         <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           {onAddToFavorites && (
-            <Button
-              variant="primary"
-              size="sm"
+            <button
+              className={`heart-button ${isSaved ? 'saved' : ''}`}
               onClick={handleAddToFavorites}
+              disabled={isSaved}
+              aria-label={isSaved ? "Place is saved" : "Add to favorites"}
             >
-              Add to Favorites
-            </Button>
+              <Heart size={25} fill={isSaved ? "#ef4444" : "none"} />
+            </button>
           )}
           {onRemoveFavorite && (
             <Button
