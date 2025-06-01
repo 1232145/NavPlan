@@ -22,8 +22,13 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const FAVORITE_PLACES_KEY = 'favorite_places';
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [favoritePlaces, setFavoritePlaces] = useState<Place[]>([]);
+  const [favoritePlaces, setFavoritePlaces] = useState<Place[]>(() => {
+    const savedPlaces = localStorage.getItem(FAVORITE_PLACES_KEY);
+    return savedPlaces ? JSON.parse(savedPlaces) : [];
+  });
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [dontAskForNote, setDontAskForNote] = useState(false);
@@ -35,6 +40,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     initSessionCheck();
   }, []);
+
+  // Save favorite places to local storage whenever they change
+  useEffect(() => {
+    localStorage.setItem(FAVORITE_PLACES_KEY, JSON.stringify(favoritePlaces));
+  }, [favoritePlaces]);
 
   const checkSession = async (): Promise<boolean> => {
     try {
@@ -48,7 +58,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addFavoritePlace = (place: Place) => {
-    setFavoritePlaces((prev) => (prev.some(p => p.id === place.id) ? prev : [...prev, place]));
+    setFavoritePlaces((prev) => {
+      if (prev.some(p => p.id === place.id)) {
+        return prev;
+      }
+      const newPlaces = [...prev, place];
+      return newPlaces;
+    });
   };
 
   const removeFavoritePlace = (id: string) => {

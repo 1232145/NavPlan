@@ -36,3 +36,50 @@
     color: #f7b500;
     font-weight: 600;
   }
+
+  .heart-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.8rem;
+    height: 2.8rem;
+    border: none;
+    border-radius: 50%;
+    background: #f3f4f6;
+    color: #6b7280;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .heart-button:hover:not(:disabled) {
+    background: #fee2e2;
+    color: #ef4444;
+    transform: scale(1.1);
+  }
+
+  .heart-button:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .heart-button:disabled {
+    cursor: default;
+    background: #fee2e2;
+    color: #ef4444;
+  }
+
+  .heart-button.saved {
+    background: #fee2e2;
+    color: #ef4444;
+  }
+
+  @media (max-width: 480px) {
+    .place-card {
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .place-card img {
+      width: 100%;
+      height: 160px;
+    }
+  }

@@ -155,7 +155,7 @@ const FavoritePlacesList: React.FC<{ favoritePlaces: Place[]; removeFavoritePlac
 };
 
 const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place | null; addFavoritePlace: (place: Place) => void }> = ({ searchResults, selectedPlace, addFavoritePlace }) => {
-  const { dontAskForNote, setDontAskForNote } = useAppContext();
+  const { dontAskForNote, setDontAskForNote, favoritePlaces } = useAppContext();
   let results = searchResults;
   let selected = null;
   if (selectedPlace && searchResults.some(p => p.id === selectedPlace.id)) {
@@ -220,7 +220,11 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
       </Dialog>
       {selected && (
         <div style={{ marginBottom: 12, background: '#f0f6ff', padding: '10px 10px 1px 10px' }}>
-          <PlaceCard place={selected} onAddToFavorites={handleAddToFavorites} />
+          <PlaceCard 
+            place={selected} 
+            onAddToFavorites={handleAddToFavorites}
+            isSaved={favoritePlaces.some(p => p.id === selected.id)}
+          />
         </div>
       )}
       {searchResults.length === 0 && !selected ? (
@@ -233,7 +237,12 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
             {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
           </p>
           {results.map(place => (
-            <PlaceCard key={place.id} place={place} onAddToFavorites={handleAddToFavorites} />
+            <PlaceCard 
+              key={place.id} 
+              place={place} 
+              onAddToFavorites={handleAddToFavorites}
+              isSaved={favoritePlaces.some(p => p.id === place.id)}
+            />
           ))}
         </>
       )}
