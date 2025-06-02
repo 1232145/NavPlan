@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Place } from '../../types';
 import './index.css';
@@ -71,38 +72,82 @@ function useItineraryPanelLogic(activeTab: 'saved' | 'search', setActiveTab: (ta
 }
 
 const FavoritePlacesList: React.FC<{ favoritePlaces: Place[]; removeFavoritePlace: (id: string) => void; selectedPlace: Place | null; clearAllFavorites: () => void; archiveFavorites: (name?: string, note?: string) => void; }> = ({ favoritePlaces, removeFavoritePlace, selectedPlace, clearAllFavorites, archiveFavorites }) => {
+  const { generateSchedule } = useAppContext();
+  const navigate = useNavigate();
+  
   let results = favoritePlaces;
   let selected = null;
   if (selectedPlace && favoritePlaces.some(p => p.id === selectedPlace.id)) {
     selected = selectedPlace;
     results = favoritePlaces.filter(p => p.id !== selectedPlace.id);
   }
-  const [open, setOpen] = useState(false);
+
+  // Archive modal state
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveName, setArchiveName] = useState('');
   const [archiveNote, setArchiveNote] = useState('');
+  
+  // Schedule modal state for choosing start time
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [startTime, setStartTime] = useState('09:00');
+
   const handleArchive = () => {
-    setOpen(true);
+    setArchiveOpen(true);
   };
-  const handleDialogClose = () => {
-    setOpen(false);
+
+  const handleArchiveClose = () => {
+    setArchiveOpen(false);
     setArchiveName('');
     setArchiveNote('');
   };
+
   const handleArchiveConfirm = () => {
     archiveFavorites(archiveName.trim() || undefined, archiveNote.trim() || undefined);
-    setOpen(false);
+    setArchiveOpen(false);
     setArchiveName('');
     setArchiveNote('');
   };
+
+  const handleGenerateSchedule = () => {
+    setScheduleOpen(true);
+  };
+
+  const handleScheduleClose = () => {
+    setScheduleOpen(false);
+  };
+
+  const handleScheduleConfirm = async () => {
+    // Move focus to a safe element before navigation
+    document.body.focus();
+    // Close the modal first to avoid aria-hidden issues
+    setScheduleOpen(false);
+    // Wait a bit to ensure modal is closed before generating schedule
+    setTimeout(async () => {
+      await generateSchedule(startTime);
+      navigate('/schedule');
+    }, 50);
+  };
+
   return (
     <div className="places-list">
       {favoritePlaces.length > 0 && (
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           <Button variant="default" size="sm" onClick={clearAllFavorites}>Clear All</Button>
           <Button variant="primary" size="sm" onClick={handleArchive}>Archive This</Button>
+          {favoritePlaces.length >= 2 && (
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={handleGenerateSchedule}
+            >
+              Generate Schedule
+            </Button>
+          )}
         </div>
       )}
-      <Dialog open={open} onClose={handleDialogClose} maxWidth="xs" fullWidth>
+
+      {/* Archive Modal */}
+      <Dialog open={archiveOpen} onClose={handleArchiveClose} maxWidth="xs" fullWidth>
         <DialogTitle>Archive List</DialogTitle>
         <DialogContent>
           <TextField
@@ -127,10 +172,45 @@ const FavoritePlacesList: React.FC<{ favoritePlaces: Place[]; removeFavoritePlac
           />
         </DialogContent>
         <DialogActions>
-          <Button variant="default" size="sm" onClick={handleDialogClose}>Cancel</Button>
+          <Button variant="default" size="sm" onClick={handleArchiveClose}>Cancel</Button>
           <Button variant="primary" size="sm" onClick={handleArchiveConfirm} disabled={!favoritePlaces.length}>Archive</Button>
         </DialogActions>
       </Dialog>
+
+      {/* Schedule Modal */}
+      <Dialog 
+        open={scheduleOpen} 
+        onClose={handleScheduleClose} 
+        maxWidth="xs" 
+        fullWidth
+        // Ensure proper accessibility
+        aria-labelledby="schedule-dialog-title"
+      >
+        <DialogTitle id="schedule-dialog-title">Generate Schedule</DialogTitle>
+        <DialogContent>
+          <p>Choose a start time for your day:</p>
+          <TextField
+            type="time"
+            fullWidth
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            margin="dense"
+            InputLabelProps={{ shrink: true }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button variant="default" size="sm" onClick={handleScheduleClose}>Cancel</Button>
+          <Button 
+            variant="primary" 
+            size="sm" 
+            onClick={handleScheduleConfirm}
+            disabled={favoritePlaces.length < 2}
+          >
+            Generate
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {selected && (
         <div style={{ marginBottom: 12, background: '#f0f6ff', padding: '10px 10px 1px 10px' }}>
           <PlaceCard place={selected} onRemoveFavorite={() => removeFavoritePlace(selected.id)} />

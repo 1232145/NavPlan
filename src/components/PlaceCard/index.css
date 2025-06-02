@@ -10,6 +10,14 @@
     align-items: flex-start;
     max-width: 480px;
     width: 100%;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+  
+  .place-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
   
   .place-card img {
@@ -18,11 +26,13 @@
     object-fit: cover;
     border-radius: 8px;
     flex-shrink: 0;
+    margin-right: 8px;
   }
   
   .place-card h3 {
     margin: 0 0 4px 0;
     font-size: 20px;
+    color: #1f2937;
   }
   
   .place-card p {
@@ -82,4 +92,32 @@
       width: 100%;
       height: 160px;
     }
+  }
+
+  /* Placeholder for when images fail to load */
+  .place-image-placeholder {
+    width: 130px;
+    height: 130px;
+    border-radius: 6px;
+    background-color: #f3f4f6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    flex-shrink: 0;
+    margin-right: 8px;
+    text-align: center;
+    padding: 8px;
+  }
+
+  .place-image-placeholder span {
+    margin-top: 8px;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    max-width: 100%;
   }

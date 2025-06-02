@@ -4,6 +4,7 @@ import { useAppContext } from '../../context/AppContext';
 import { Place, Coordinates } from '../../types';
 import { TabControlProps } from '../ItineraryPanel';
 import './index.css';
+import { Image as ImageIcon } from 'lucide-react';
 
 // Define libraries array outside component to prevent reloading
 const GOOGLE_MAP_LIBRARIES: Libraries = ['places'];
@@ -183,16 +184,24 @@ const MapLoading: React.FC = () => (
 );
 
 const PlaceInfoWindow: React.FC<{ place: Place; onClose: () => void; onAddToFavorites: () => void; activeTab: 'saved' | 'search'; }> = ({ place, onClose, onAddToFavorites, activeTab }) => {
+  const [imageError, setImageError] = useState(false);
+  
   return (
     <div style={{ maxWidth: '300px', padding: '10px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 6px rgba(0,0,0,0.3)' }}>
       <h3 style={{ marginTop: '0', marginBottom: '10px' }}>{place.name}</h3>
-      {place.photos && place.photos.length > 0 && (
+      {place.photos && place.photos.length > 0 && !imageError ? (
         <div style={{ marginBottom: '10px' }}>
           <img 
             src={place.photos[0]} 
             alt={place.name} 
             style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '4px' }} 
+            onError={() => setImageError(true)}
           />
+        </div>
+      ) : (
+        <div style={{ width: '100%', height: '150px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', borderRadius: '4px', marginBottom: '10px' }}>
+          <ImageIcon size={32} color="#9ca3af" />
+          <span style={{ marginTop: '8px', color: '#9ca3af', fontSize: '14px' }}>{place.name}</span>
         </div>
       )}
       <p>{place.address}</p>

@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Place } from '../types';
+import { Place, Schedule } from '../types';
 import api from '../services/api/axios';
 import { archivedListService } from '../services/archivedListService';
+import { scheduleService } from '../services/scheduleService';
 
 interface AppContextType {
   favoritePlaces: Place[];
@@ -18,6 +19,9 @@ interface AppContextType {
   user: any;
   setUser: React.Dispatch<React.SetStateAction<any>>;
   checkSession: () => Promise<boolean>;
+  currentSchedule: Schedule | null;
+  setCurrentSchedule: React.Dispatch<React.SetStateAction<Schedule | null>>;
+  generateSchedule: (startTime: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -33,6 +37,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [dontAskForNote, setDontAskForNote] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
 
   useEffect(() => {
     const initSessionCheck = async () => {
@@ -89,6 +94,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       throw error;
     }
   };
+  
+  const generateSchedule = async (startTime: string) => {
+    if (favoritePlaces.length < 2) {
+      console.error("Need at least 2 places to generate a schedule");
+      return;
+    }
+    
+    try {
+      const schedule = await scheduleService.generateSchedule(favoritePlaces, startTime);
+      setCurrentSchedule(schedule);
+    } catch (error) {
+      console.error('Failed to generate schedule:', error);
+    }
+  };
 
   return (
     <AppContext.Provider value={{
@@ -106,6 +125,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       user,
       setUser,
       checkSession,
+      currentSchedule,
+      setCurrentSchedule,
+      generateSchedule,
     }}>
       {children}
     </AppContext.Provider>

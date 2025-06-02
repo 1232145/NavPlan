@@ -31,3 +31,27 @@ export interface ArchivedList {
   places: Place[];
   note?: string;
 }
+
+export interface RouteSegment {
+  start_location: Coordinates;
+  end_location: Coordinates;
+  distance: { text: string; value: number };
+  duration: { text: string; value: number };
+  polyline: string;
+}
+
+export interface ScheduleItem {
+  place_id: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  duration_minutes: number;
+  activity: string;
+  travel_to_next?: RouteSegment;
+}
+
+export interface Schedule {
+  items: ScheduleItem[];
+  total_duration_minutes: number;
+  total_distance_meters: number;
+}

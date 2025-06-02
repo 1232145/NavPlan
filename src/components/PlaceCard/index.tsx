@@ -3,7 +3,7 @@ import { Place } from '../../types';
 import './index.css';
 import confetti from 'canvas-confetti';
 import { Button } from '../Button';
-import { Heart } from 'lucide-react';
+import { Heart, Image as ImageIcon } from 'lucide-react';
 
 export interface PlaceCardProps {
   place: Place;
@@ -15,6 +15,7 @@ export interface PlaceCardProps {
 export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, onRemoveFavorite, isSaved = false }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [showFullNote, setShowFullNote] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleAddToFavorites = () => {
     if (onAddToFavorites && !isSaved) {
@@ -44,11 +45,17 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, o
 
   return (
     <div className="place-card" ref={cardRef}>
-      {place.photos && place.photos.length > 0 && (
+      {place.photos && place.photos.length > 0 && !imageError ? (
         <img
           src={place.photos[0]}
           alt={place.name}
+          onError={() => setImageError(true)}
         />
+      ) : (
+        <div className="place-image-placeholder">
+          <ImageIcon size={32} />
+          <span>{place.name}</span>
+        </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h3>{place.name}</h3>

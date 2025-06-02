@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import MapPage from './pages/MapPage';
 import ArchivedListsPage from './pages/ArchivedListsPage';
+import SchedulePage from './pages/SchedulePage';
 import LandingPage from './pages/LandingPage';
 import ErrorPage from './pages/ErrorPage';
 import MainLayout from './layout/MainLayout';
@@ -60,6 +61,7 @@ function AppRoutes() {
       </SessionGuard>}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/map" element={<MapPage />} />
+        <Route path="/schedule" element={<SchedulePage />} />
         <Route path="/lists" element={<ArchivedListsPage />} />
       </Route>
     </Routes>
