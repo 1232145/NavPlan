@@ -12,14 +12,10 @@
 .header.map-page {
   color: black;
   top: 6px;
-}
-
-.header.map-page .logo {
-  margin-left: -45px;
-}
-
-.header.map-page .logo h1 {
-  color: black;
+  left: 25%;
+  top: 20px;
+  right: auto;
+  width: auto;
 }
 
 .header.map-page .btn {
@@ -32,6 +28,12 @@
   border-color: rgba(0, 0, 0, 0.5);
 }
 
+.header.map-page .header-content {
+  width: 600px;
+  margin: 0 auto;
+  padding: var(--space-4) 0;
+}
+
 .header-content {
   display: flex;
   justify-content: space-between;
@@ -40,8 +42,10 @@
 }
 
 .header.map-page .search-container {
-  position: absolute;
-  left: 43%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo {

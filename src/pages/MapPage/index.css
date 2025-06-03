@@ -4,53 +4,42 @@
   min-height: 0;
   min-width: 0;
   width: 100%;
-  height: calc(100vh - 64px); /* Subtract header height */
-  margin-top: 4.5rem; 
-  padding-bottom: 20px;/* Add margin equal to header height */
+  height: 100vh; /* Let map-page-content also take full screen height */
+  margin-top: 0; /* Removed original margin-top */
+  padding-bottom: 0; /* Removed original padding-bottom */
   gap: 20px;
-  padding-right: 435px; /* Account for itinerary panel width + margin */
 }
 
-.navbar-column {
-  width: 200px;
+/* Navbar column styles have been moved to src/components/NavbarColumn/index.css */
+
+.map-container-wrapper { /* New wrapper for map and itinerary panel */
+  flex: 1;
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding-top: 30px;
-  align-items: center;
-}
-
-.navbar-column button {
-  background: transparent;
-  border: none;
-  font-weight: 500;
-  padding: 8px 16px;
-  transition: color 0.2s ease;
-  width: 10rem;
-  align-items: center;
-}
-
-.navbar-column button:hover {
-  color: #1a4b6e;
+  flex-direction: column; /* Stack map and itinerary if needed or adjust layout */
+  min-width: 0;
+  position: relative; /* For absolute positioning of itinerary panel if needed */
+  height: 100vh; /* Take full viewport height */
+  padding-right: 20px; /* Original gap */
+  padding-bottom: 20px; /* Original gap */
 }
 
 .map-container {
-  flex: 2;
   min-width: 0;
   min-height: 0;
   border-radius: 20px;
-  width: calc(100% - 435px); /* Subtract itinerary panel width + margin */
+  width: 67%;
+  top: 9%;
+  height: 91%; /* Map should fill its container */
+  position: relative; /* To ensure it stacks correctly with itinerary panel */
 }
 
 .itinerary-panel {
   min-width: 320px;
   max-width: 400px;
-  min-height: 0;
-  max-height: 100vh;
-  height: 95.6%;
+  height: calc(100% - (var(--space-4) + 0.5rem) - 20px); /* Fill available height within map-container-wrapper, accounting for padding */
   border-radius: 20px;
-  margin-right: 1rem;
   position: absolute;
-  right: 0;
-  top: 1rem;
+  right: 20px; /* Align to the right of map-container-wrapper */
+  top: 12px; /* Align with top padding of wrapper */
+  background-color: white; /* Ensure it has a background */
 } 

@@ -43,30 +43,30 @@ const Header: React.FC<HeaderProps> = ({ mapCenter, onMyListsClick, onLogoClick 
   return (
     <header className={`header ${isMapPage ? 'map-page' : ''}`}>
       <div className="header-content">
-        <div className="logo" style={{ cursor: 'pointer' }} onClick={onLogoClick}>
-          <Map size={28} />
-          <h1>NavPlan</h1>
-        </div>
-        {location.pathname === '/map' && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 24, marginRight: 24 }}>
+        {!isMapPage && (
+          <div className="logo" style={{ cursor: 'pointer' }} onClick={onLogoClick}>
+            <Map size={28} />
+            <h1>NavPlan</h1>
+          </div>
+        )}
+        {isMapPage && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' /* Ensure search bar container takes full width */ }}>
             <SearchBar onSearchResults={dispatchSearchResults} mapCenter={mapCenter} />
           </div>
         )}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
-          {location.pathname !== '/map' && (
-            <>
-              <Button variant="primary" size="md" onClick={handleGoToMap}>
-                Go to Map
-              </Button>
-              <Button variant="primary" size="md" onClick={onMyListsClick}>
-                My Lists
-              </Button>
-              <Button variant="primary" size="md" onClick={handleSignOut}>
-                Sign Out
-              </Button>
-            </>
-          )}
-        </div>
+        {!isMapPage && (
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
+            <Button variant="primary" size="md" onClick={handleGoToMap}>
+              Go to Map
+            </Button>
+            <Button variant="primary" size="md" onClick={onMyListsClick}>
+              My Lists
+            </Button>
+            <Button variant="primary" size="md" onClick={handleSignOut}>
+              Sign Out
+            </Button>
+          </div>
+        )}
       </div>
     </header>
   );

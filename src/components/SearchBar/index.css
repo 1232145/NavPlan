@@ -38,10 +38,6 @@
   transition: box-shadow var(--transition-fast);
 }
 
-.search-input:focus {
-  box-shadow: var(--shadow-lg), 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
 .clear-search {
   position: absolute;
   right: var(--space-3);
