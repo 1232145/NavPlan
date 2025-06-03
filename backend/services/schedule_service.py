@@ -30,13 +30,14 @@ DEFAULT_VISIT_DURATION_MINUTES = {
 TRAVEL_BUFFER_MINUTES = 15  # Buffer time between places
 EARTH_RADIUS_KM = 6371  # Earth radius in kilometers
 
-async def generate_schedule(places: List[Dict[str, Any]], start_time_str: str) -> Schedule:
+async def generate_schedule(places: List[Dict[str, Any]], start_time_str: str, travel_mode: str = "walking") -> Schedule:
     """
     Generate a detailed schedule with travel times and visit durations
     
     Args:
         places: List of places in optimized order
         start_time_str: Start time for the schedule in HH:MM format
+        travel_mode: Mode of transportation (walking, driving, bicycling, transit)
         
     Returns:
         Schedule object with detailed timeline
@@ -53,7 +54,7 @@ async def generate_schedule(places: List[Dict[str, Any]], start_time_str: str) -
         
         # Pre-calculate all travel times and distances
         if len(places) > 1 and GOOGLE_MAPS_API_KEY:
-            travel_data = await calculate_travel_data(places)
+            travel_data = await calculate_travel_data(places, travel_mode)
         else:
             travel_data = None
         
@@ -192,10 +193,14 @@ async def generate_schedule(places: List[Dict[str, Any]], start_time_str: str) -
         logger.error(f"Error in generate_schedule: {e}")
         raise
 
-async def calculate_travel_data(places: List[Dict[str, Any]]) -> List[Tuple[int, int, str]]:
+async def calculate_travel_data(places: List[Dict[str, Any]], travel_mode: str = "walking") -> List[Tuple[int, int, str]]:
     """
     Calculate travel times, distances and routes between sequential places using Google Maps API
     
+    Args:
+        places: List of places in sequential order
+        travel_mode: Mode of transportation (walking, driving, bicycling, transit)
+        
     Returns:
         List of tuples containing (duration_seconds, distance_meters, polyline)
     """
@@ -229,12 +234,18 @@ async def calculate_travel_data(places: List[Dict[str, Any]]) -> List[Tuple[int,
                 origin_str = f"{origin_lat},{origin_lng}"
                 destination_str = f"{dest_lat},{dest_lng}"
                 
+                # Validate travel mode
+                valid_modes = ["walking", "driving", "bicycling", "transit"]
+                if travel_mode not in valid_modes:
+                    logger.warning(f"Invalid travel mode: {travel_mode}, using walking")
+                    travel_mode = "walking"
+                
                 response = await client.get(
                     "https://maps.googleapis.com/maps/api/directions/json",
                     params={
                         "origin": origin_str,
                         "destination": destination_str,
-                        "mode": "walking",  # Use walking mode for a day plan
+                        "mode": travel_mode,
                         "key": GOOGLE_MAPS_API_KEY
                     }
                 )
@@ -248,6 +259,12 @@ async def calculate_travel_data(places: List[Dict[str, Any]]) -> List[Tuple[int,
                     continue
                 
                 result = response.json()
+                
+                if result.get("status") == "REQUEST_DENIED":
+                    error_message = result.get("error_message", "Unknown API key error")
+                    logger.error(f"Google API key error: {error_message}")
+                    # Stop trying to use the API if the key is invalid
+                    return []
                 
                 if result.get("status") != "OK" or not result.get("routes"):
                     logger.warning(f"No route found: {result.get('status')}")

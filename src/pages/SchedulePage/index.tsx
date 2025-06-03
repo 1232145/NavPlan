@@ -19,18 +19,29 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Button } from '../../components/Button';
 import DirectionsMap from '../../components/DirectionsMap';
+import { scheduleService } from '../../services/scheduleService';
 import './index.css';
 
 // Default location (New York) as fallback
 const DEFAULT_CENTER = { lat: 40.7128, lng: -74.0060 };
 
+// Travel mode options
+const TRAVEL_MODES = [
+  { value: "walking", label: "Walking", icon: "🚶" },
+  { value: "driving", label: "Driving", icon: "🚗" },
+  { value: "bicycling", label: "Bicycling", icon: "🚲" },
+  { value: "transit", label: "Transit", icon: "🚆" }
+];
+
 // Custom marker colors for better visibility
 const markerColors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#FF9800', '#9C27B0', '#795548'];
 
 const SchedulePage: React.FC = () => {
-  const { currentSchedule, favoritePlaces } = useAppContext();
+  const { currentSchedule, favoritePlaces, setCurrentSchedule } = useAppContext();
   const navigate = useNavigate();
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
+  const [travelMode, setTravelMode] = useState("walking");
+  const [isLoading, setIsLoading] = useState(false);
   
   // Set initial map center based on first place
   useEffect(() => {
@@ -57,19 +68,38 @@ const SchedulePage: React.FC = () => {
     navigate('/map');
   };
 
+  const handleTravelModeChange = async (mode: string) => {
+    if (mode === travelMode || !favoritePlaces.length) return;
+    
+    try {
+      setIsLoading(true);
+      setTravelMode(mode);
+      
+      // Only regenerate the schedule if we have places
+      if (favoritePlaces.length > 1) {
+        // Get the start time from the current schedule or use default
+        const startTime = currentSchedule?.items[0]?.start_time || "09:00";
+        
+        // Call the API to regenerate the schedule with the new travel mode
+        const newSchedule = await scheduleService.generateSchedule(
+          favoritePlaces, 
+          startTime, 
+          mode
+        );
+        
+        // Update the schedule in context
+        setCurrentSchedule(newSchedule);
+      }
+    } catch (error) {
+      console.error("Failed to update schedule with new travel mode:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (!currentSchedule) {
     return <div className="schedule-loading">Loading your schedule...</div>;
   }
-
-  // Create an array of valid schedule items for rendering
-  const validItems = currentSchedule.items.filter(item => 
-    item.travel_to_next && 
-    item.travel_to_next.start_location && 
-    item.travel_to_next.start_location.lat && 
-    item.travel_to_next.start_location.lng &&
-    (item.travel_to_next.start_location.lat !== 0 || 
-     item.travel_to_next.start_location.lng !== 0)
-  );
 
   return (
     <div className="schedule-page">
@@ -84,12 +114,33 @@ const SchedulePage: React.FC = () => {
         </div>
       </div>
 
+      {/* Travel mode selector */}
+      <div className="travel-mode-selector">
+        <div className="travel-mode-label">Travel mode:</div>
+        <div className="travel-mode-options">
+          {TRAVEL_MODES.map(mode => (
+            <button
+              key={mode.value}
+              className={`travel-mode-option ${travelMode === mode.value ? 'active' : ''}`}
+              onClick={() => handleTravelModeChange(mode.value)}
+              title={mode.label}
+              disabled={isLoading}
+            >
+              <span className="travel-mode-icon">{mode.icon}</span>
+              <span className="travel-mode-text">{mode.label}</span>
+            </button>
+          ))}
+        </div>
+        {isLoading && <div className="loading-indicator">Updating schedule...</div>}
+      </div>
+
       {/* Map with route */}
       <div className="schedule-map-container">
         <DirectionsMap 
           schedule={currentSchedule}
           places={favoritePlaces}
           initialCenter={mapCenter}
+          travelMode={travelMode}
         />
       </div>
 
@@ -116,7 +167,7 @@ const SchedulePage: React.FC = () => {
             {item.travel_to_next && (
               <div className="travel-segment">
                 <div className="travel-infor">
-                  <i className="travel-icon">🚶</i>
+                  <i className="travel-icon">{TRAVEL_MODES.find(mode => mode.value === travelMode)?.icon}</i>
                   <div className="travel-details">
                     <div>{item.travel_to_next.duration.text} ({item.travel_to_next.distance.text})</div>
                   </div>

@@ -42,7 +42,11 @@ async def create_schedule(
         
         # 2. Generate routes and schedule
         logger.info("Generating schedule with optimized places")
-        schedule = await generate_schedule(optimized_places, schedule_request.start_time)
+        schedule = await generate_schedule(
+            optimized_places, 
+            schedule_request.start_time,
+            schedule_request.travel_mode
+        )
         
         return {
             "schedule": schedule,

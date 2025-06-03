@@ -19,7 +19,6 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { DirectionsRenderer } from '@react-google-maps/api';
 import Map from '../Map';
 import MapMarker from '../MapMarker';
 import { Schedule, Place, Coordinates } from '../../types';
@@ -29,20 +28,62 @@ export interface DirectionsMapProps {
   schedule: Schedule;
   places: Place[];
   initialCenter?: Coordinates;
+  travelMode?: string;
 }
 
 const DEFAULT_CENTER = { lat: 40.7128, lng: -74.0060 }; // New York as default
 
+const mapOptions = {
+  styles: [
+    {
+      featureType: 'road',
+      elementType: 'geometry.stroke',
+      stylers: [
+        { color: 'transparent' },
+        { visibility: 'on' }
+      ]
+    },
+    {
+      featureType: 'road',
+      elementType: 'geometry.fill',
+      stylers: [
+        { color: '#ffffff' }
+      ]
+    },
+    {
+      featureType: 'road.local',
+      stylers: [{ visibility: 'simplified' }]
+    },
+    {
+      featureType: 'transit',
+      stylers: [{ visibility: 'off' }]
+    }
+  ]
+};
+
 const DirectionsMap: React.FC<DirectionsMapProps> = ({
   schedule,
   places,
-  initialCenter = DEFAULT_CENTER
+  initialCenter = DEFAULT_CENTER,
+  travelMode = "walking"
 }) => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [mapCenter, setMapCenter] = useState<Coordinates>(initialCenter);
   const [mapError, setMapError] = useState<string | null>(null);
   const directionsAttempted = useRef(false);
+  const directionsRenderer = useRef<google.maps.DirectionsRenderer | null>(null);
+
+  // Reset directions when travel mode changes or component mounts
+  useEffect(() => {
+    // Clear existing directions renderer
+    if (directionsRenderer.current) {
+      directionsRenderer.current.setMap(null);
+      directionsRenderer.current = null;
+    }
+    setDirections(null);
+    directionsAttempted.current = false;
+  }, [travelMode]);
 
   // Create bounds for all locations to fit the map
   const fitBounds = useCallback(() => {
@@ -118,21 +159,29 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
     // Ensure the map is visible by triggering a resize event
     window.google.maps.event.trigger(mapInstance, 'resize');
 
+    // Reset directionsAttempted to ensure initial route is generated
+    directionsAttempted.current = false;
+
     setTimeout(() => {
       fitBounds();
-    }, 500); // Increased timeout to ensure the map is fully loaded
+    }, 500);
   }, [fitBounds]);
 
   // Function to fetch directions
   useEffect(() => {
     if (!map || !schedule || schedule.items.length < 2 || directionsAttempted.current) {
-      console.log("No map or schedule or schedule items < 2 or directionsAttempted");
       return;
     }
 
     try {
-      console.log("Attempting to get directions");
+      console.log("Attempting to get directions for mode:", travelMode);
       directionsAttempted.current = true;
+
+      // Clear any existing directions renderer
+      if (directionsRenderer.current) {
+        directionsRenderer.current.setMap(null);
+        directionsRenderer.current = null;
+      }
 
       // Validate each place has valid coordinates before attempting to get directions
       let allValid = true;
@@ -196,12 +245,37 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
           lastItem.travel_to_next.end_location.lng
         ),
         waypoints: validWaypoints,
-        travelMode: window.google.maps.TravelMode.DRIVING,
+        travelMode: getTravelMode(travelMode),
         optimizeWaypoints: false
       }, (result, status) => {
         if (status === window.google.maps.DirectionsStatus.OK) {
           console.log("Directions received successfully");
+          // Create new directions renderer
+          const renderer = new window.google.maps.DirectionsRenderer({
+            suppressMarkers: true,
+            polylineOptions: {
+              strokeColor: '#4285F4',
+              strokeWeight: 5,
+              strokeOpacity: 0.8,
+              icons: [{
+                icon: {
+                  path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                  scale: 4,
+                  fillColor: '#FFFFFF',
+                  fillOpacity: 1,
+                  strokeColor: '#4285F4',
+                  strokeWeight: 2,
+                },
+                offset: '0',
+                repeat: '100px'
+              }]
+            }
+          });
+          renderer.setMap(map);
+          renderer.setDirections(result);
+          directionsRenderer.current = renderer;
           setDirections(result);
+          fitBounds();
         } else {
           console.error("Directions request failed:", status);
           setMapError(`Directions request failed: ${status}`);
@@ -214,7 +288,22 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
       setMapError("Error generating directions");
       fitBounds();
     }
-  }, [map, schedule, fitBounds]);
+  }, [map, schedule, fitBounds, travelMode]);
+
+  // Helper function to convert string travel mode to Google Maps travel mode
+  const getTravelMode = (mode: string): google.maps.TravelMode => {
+    switch (mode.toLowerCase()) {
+      case 'driving':
+        return window.google.maps.TravelMode.DRIVING;
+      case 'bicycling':
+        return window.google.maps.TravelMode.BICYCLING;
+      case 'transit':
+        return window.google.maps.TravelMode.TRANSIT;
+      case 'walking':
+      default:
+        return window.google.maps.TravelMode.WALKING;
+    }
+  };
 
   // Convert schedule items to Place objects for markers
   const schedulePlaces = schedule.items.map((item) => {
@@ -245,21 +334,8 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
         onMapLoad={handleMapLoad}
         className="directions-map"
         zoom={12}
+        options={mapOptions}
       >
-        {/* Display the route if directions are available */}
-        {directions && (
-          <DirectionsRenderer
-            directions={directions}
-            options={{
-              suppressMarkers: true,
-              polylineOptions: {
-                strokeColor: '#4285F4',
-                strokeWeight: 5,
-                strokeOpacity: 0.8
-              }
-            }}
-          />
-        )}
         {/* Display markers for each place in the schedule */}
         {schedulePlaces.map((place, index) => (
           <MapMarker

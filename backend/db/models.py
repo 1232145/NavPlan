@@ -37,4 +37,5 @@ class Schedule(BaseModel):
 class ScheduleRequest(BaseModel):
     """Model for schedule generation request"""
     places: List[Dict[str, Any]]
-    start_time: str = "09:00"  # Default start time 
+    start_time: str = "09:00"  # Default start time
+    travel_mode: str = "walking"  # Default travel mode (walking, driving, bicycling, transit) 

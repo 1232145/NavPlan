@@ -10,13 +10,12 @@ html {
 }
 
 .schedule-page {
-  max-width: 1200px;
+  width: 50%;
   margin: 0 auto;
   padding: 20px;
   padding-bottom: 100px;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   position: relative;
-  min-height: calc(100vh - 120px);
 }
 
 .schedule-page-header {
@@ -279,4 +278,83 @@ html {
   .schedule-btn:last-child {
     margin-bottom: 0;
   }
+}
+
+/* Travel mode selector */
+.travel-mode-selector {
+  display: flex;
+  align-items: center;
+  margin: 1rem 0;
+  padding: 0 1rem;
+}
+
+.travel-mode-label {
+  font-weight: 500;
+  margin-right: 1rem;
+}
+
+.travel-mode-options {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.travel-mode-option {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.travel-mode-option:hover {
+  background: #f5f5f5;
+}
+
+.travel-mode-option.active {
+  background: #e8f0fe;
+  border-color: #4285F4;
+  color: #4285F4;
+}
+
+.travel-mode-icon {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.travel-mode-text {
+  font-size: 0.9rem;
+}
+
+.loading-indicator {
+  margin-left: 1rem;
+  color: #4285F4;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+
+.loading-indicator::before {
+  content: "";
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #4285F4;
+  border-radius: 50%;
+  border-top-color: transparent;
+  margin-right: 0.5rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.travel-mode-option:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 } 

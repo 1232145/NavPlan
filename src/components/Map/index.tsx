@@ -35,6 +35,7 @@ export interface MapProps {
   setMapCenter?: (center: Coordinates) => void;
   onMapLoad?: (map: google.maps.Map) => void;
   onMapUnmount?: () => void;
+  options?: google.maps.MapOptions;
   zoom?: number;
   children?: React.ReactNode;
   className?: string;
@@ -58,6 +59,7 @@ const Map: React.FC<MapProps> = ({
   setMapCenter,
   onMapLoad,
   onMapUnmount,
+  options,
   zoom = 13,
   children,
   className = "",
@@ -142,7 +144,8 @@ const Map: React.FC<MapProps> = ({
           fullscreenControl: false,
           streetViewControl: false,
           mapTypeControl: false,
-          zoomControl: true
+          zoomControl: true,
+          ...options
         }}
       >
         {children}
