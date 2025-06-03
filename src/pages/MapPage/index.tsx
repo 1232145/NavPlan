@@ -1,5 +1,20 @@
+/**
+ * MapPage Component
+ * 
+ * The main page for exploring and saving places on a map.
+ * 
+ * Features:
+ * - Interactive map for searching and viewing places
+ * - Side panel for managing saved places and search results
+ * - Navigation controls for accessing lists and signing out
+ * - Integrated search functionality
+ * 
+ * This page combines the PlacesMap and ItineraryPanel components to provide
+ * a complete interface for place discovery and itinerary building.
+ */
+
 import React, { useState } from 'react';
-import MapContainer from '../../components/MapContainer';
+import PlacesMap from '../../components/PlacesMap';
 import ItineraryPanel from '../../components/ItineraryPanel';
 import { Button } from '../../components/Button';
 import { useNavigate } from 'react-router-dom';
@@ -37,7 +52,7 @@ const MapPage: React.FC = () => {
           Sign Out
         </Button>
       </div>
-      <MapContainer mapCenter={mapCenter} setMapCenter={setMapCenter} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <PlacesMap mapCenter={mapCenter} setMapCenter={setMapCenter} activeTab={activeTab} setActiveTab={setActiveTab} />
       <ItineraryPanel activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );

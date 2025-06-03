@@ -1,0 +1,4 @@
+/* MapMarker styles will be mainly handled inline or by Google Maps API */
+.map-marker-content {
+  position: relative;
+} 
