@@ -1,6 +1,7 @@
 
 Must implement:
 
+functionality:
 AI estimates timing at each place.
 selective place in favorite list (currently choose all).
 Add AI prompt
@@ -12,7 +13,8 @@ Modify schema to attach schedule
 Import from google maps your archived list
 Move generate schedules to my archive list (implemented with mongoDB vector search)
 
-
-improve routes display
-
 AI chat for schedule?
+
+frontend:
+upon hovering item in search results/saved place, it should highlight in map
+improve routes display
