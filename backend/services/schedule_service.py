@@ -30,7 +30,12 @@ DEFAULT_VISIT_DURATION_MINUTES = {
 TRAVEL_BUFFER_MINUTES = 15  # Buffer time between places
 EARTH_RADIUS_KM = 6371  # Earth radius in kilometers
 
-async def generate_schedule(places: List[Dict[str, Any]], start_time_str: str, travel_mode: str = "walking") -> Schedule:
+async def generate_schedule(
+    places: List[Dict[str, Any]], 
+    start_time_str: str, 
+    travel_mode: str = "walking",
+    day_overview: Optional[str] = None
+) -> Schedule:
     """
     Generate a detailed schedule with travel times and visit durations
     
@@ -38,6 +43,7 @@ async def generate_schedule(places: List[Dict[str, Any]], start_time_str: str, t
         places: List of places in optimized order
         start_time_str: Start time for the schedule in HH:MM format
         travel_mode: Mode of transportation (walking, driving, bicycling, transit)
+        day_overview: Optional overview of the day from AI
         
     Returns:
         Schedule object with detailed timeline
@@ -90,6 +96,9 @@ async def generate_schedule(places: List[Dict[str, Any]], start_time_str: str, t
             # Create activity description based on place type
             activity = generate_activity_description(place)
             
+            # Add ai_review to the schedule item if present in the place object
+            ai_review = place.get('ai_review')
+
             # Create schedule item
             schedule_item = ScheduleItem(
                 place_id=place_id,
@@ -97,14 +106,15 @@ async def generate_schedule(places: List[Dict[str, Any]], start_time_str: str, t
                 start_time=start_time_str,
                 end_time=end_time_str,
                 duration_minutes=visit_duration,
-                activity=activity
+                activity=activity,
+                ai_review=ai_review
             )
             
             # Calculate route to next place if not the last place
             if i < len(places) - 1:
                 next_place = places[i + 1]
                 next_location = next_place.get('location', {})
-                next_lat = next_location.get('lat', 0) 
+                next_lat = next_location.get('lat', 0)
                 next_lng = next_location.get('lng', 0)
                 
                 # Use pre-calculated travel data if available
@@ -177,16 +187,22 @@ async def generate_schedule(places: List[Dict[str, Any]], start_time_str: str, t
         
         # Calculate total travel duration
         if len(schedule_items) > 1:
-            travel_duration = (current_time - start_time).total_seconds() / 60 - total_duration
+            # Re-calculate total duration based on start and end times to be more accurate
+            # Total duration is difference between last item's end time and first item's start time
+            # plus travel time to next place for all but the last item.
+            # This is complex, simplify by taking the final current_time minus initial start_time
+            initial_start_time = datetime.now().replace(
+                hour=start_hour, minute=start_minute, second=0, microsecond=0
+            )
+            total_duration_minutes = int((current_time - initial_start_time).total_seconds() / 60)
         else:
-            travel_duration = 0
+            total_duration_minutes = total_duration # If only one place, it's just visit duration
             
-        total_duration += travel_duration
-        
         return Schedule(
             items=schedule_items,
-            total_duration_minutes=int(total_duration),
-            total_distance_meters=total_distance
+            total_duration_minutes=total_duration_minutes,
+            total_distance_meters=total_distance,
+            day_overview=day_overview
         )
         
     except Exception as e:

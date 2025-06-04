@@ -130,7 +130,6 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
       });
 
       if (addedPoints > 0) {
-        console.log(`Fitting map to ${addedPoints} points`);
         map.fitBounds(bounds);
 
         // Slightly zoom out to give some padding
@@ -153,7 +152,6 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
 
   // Handle map load
   const handleMapLoad = useCallback((mapInstance: google.maps.Map) => {
-    console.log("Map loaded successfully");
     setMap(mapInstance);
 
     // Ensure the map is visible by triggering a resize event
@@ -174,7 +172,6 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
     }
 
     try {
-      console.log("Attempting to get directions for mode:", travelMode);
       directionsAttempted.current = true;
 
       // Clear any existing directions renderer
@@ -229,9 +226,6 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
         return;
       }
 
-      console.log("Origin:", firstItem.travel_to_next.start_location);
-      console.log("Destination:", lastItem.travel_to_next.end_location);
-
       // Set up directions service
       const directionsService = new window.google.maps.DirectionsService();
 
@@ -249,7 +243,6 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
         optimizeWaypoints: false
       }, (result, status) => {
         if (status === window.google.maps.DirectionsStatus.OK) {
-          console.log("Directions received successfully");
           // Create new directions renderer
           const renderer = new window.google.maps.DirectionsRenderer({
             suppressMarkers: true,

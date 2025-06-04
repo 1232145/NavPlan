@@ -35,6 +35,11 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 if not GOOGLE_API_KEY:
     logger.warning("GOOGLE_API_KEY not set in environment variables")
 
+# OpenRouter AI Configuration
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+if not OPENROUTER_API_KEY:
+    logger.warning("OPENROUTER_API_KEY not set in environment variables. Some AI features may not be available.")
+
 # MongoDB Configuration
 MONGODB_URI = os.getenv("MONGODB_URI")
 MONGODB_DB = os.getenv("MONGODB_DB")

@@ -98,13 +98,11 @@ const Map: React.FC<MapProps> = ({
   
   // Map load/unmount handlers
   const handleLoad = useCallback((mapInstance: google.maps.Map) => {
-    console.log("Base map loaded");
     setMap(mapInstance);
     if (onMapLoad) onMapLoad(mapInstance);
   }, [onMapLoad]);
   
   const handleUnmount = useCallback(() => {
-    console.log("Base map unmounted");
     setMap(null);
     if (onMapUnmount) onMapUnmount();
   }, [onMapUnmount]);

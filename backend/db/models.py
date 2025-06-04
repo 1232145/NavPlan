@@ -27,15 +27,19 @@ class ScheduleItem(BaseModel):
     duration_minutes: int
     activity: Optional[str] = None
     travel_to_next: Optional[RouteSegment] = None
+    ai_review: Optional[str] = None
 
 class Schedule(BaseModel):
     """Model for a complete schedule"""
     items: List[ScheduleItem]
     total_duration_minutes: int
     total_distance_meters: int
+    day_overview: Optional[str] = None
 
 class ScheduleRequest(BaseModel):
     """Model for schedule generation request"""
     places: List[Dict[str, Any]]
     start_time: str = "09:00"  # Default start time
     travel_mode: str = "walking"  # Default travel mode (walking, driving, bicycling, transit) 
+    prompt: Optional[str] = None  # Optional custom prompt for AI optimization
+    day_overview: Optional[str] = None # Optional AI-generated day overview

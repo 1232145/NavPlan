@@ -134,7 +134,7 @@ const FavoritePlacesList: React.FC<{ favoritePlaces: Place[]; removeFavoritePlac
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           <Button variant="default" size="sm" onClick={clearAllFavorites}>Clear All</Button>
           <Button variant="primary" size="sm" onClick={handleArchive}>Archive This</Button>
-          {favoritePlaces.length >= 2 && (
+          {favoritePlaces.length >= 3 && (
             <Button 
               variant="secondary" 
               size="sm" 
@@ -235,7 +235,7 @@ const FavoritePlacesList: React.FC<{ favoritePlaces: Place[]; removeFavoritePlac
 };
 
 const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place | null; addFavoritePlace: (place: Place) => void }> = ({ searchResults, selectedPlace, addFavoritePlace }) => {
-  const { dontAskForNote, setDontAskForNote, favoritePlaces } = useAppContext();
+  const { favoritePlaces } = useAppContext();
   let results = searchResults;
   let selected = null;
   if (selectedPlace && searchResults.some(p => p.id === selectedPlace.id)) {
@@ -246,6 +246,7 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [pendingPlace, setPendingPlace] = useState<Place | null>(null);
   const [note, setNote] = useState('');
+  const [dontAskForNote, setDontAskForNote] = useState(false);
 
   const handleAddToFavorites = (place: Place) => {
     if (!dontAskForNote) {

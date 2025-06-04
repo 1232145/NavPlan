@@ -22,6 +22,7 @@ export interface Place {
   photos?: string[];
   userAdded?: boolean;
   note?: string;
+  ai_review?: string | null;
 }
 
 export interface ArchivedList {
@@ -48,10 +49,14 @@ export interface ScheduleItem {
   duration_minutes: number;
   activity: string;
   travel_to_next?: RouteSegment;
+  placeType: string;
+  address: string;
+  ai_review?: string;
 }
 
 export interface Schedule {
   items: ScheduleItem[];
   total_duration_minutes: number;
   total_distance_meters: number;
+  day_overview?: string;
 }
