@@ -40,9 +40,10 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
   activeTab, 
   setActiveTab 
 }) => {
-  const { favoritePlaces, addFavoritePlace, selectedPlace, setSelectedPlace } = useAppContext();
+  const { favoritePlaces, addFavoritePlace } = useAppContext();
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [nearbyPlaces, setNearbyPlaces] = useState<Place[]>([]);
+  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const markerClickedRef = useRef(false);
 
   // Helper to fit map to all result markers

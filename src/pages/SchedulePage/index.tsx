@@ -64,7 +64,6 @@ const SchedulePage: React.FC = () => {
       }
     }
 
-    console.log("first render currentSchedule", currentSchedule);
   }, [currentSchedule, navigate]);
 
   const handleBackToMap = () => {
@@ -117,7 +116,6 @@ const SchedulePage: React.FC = () => {
         );
 
         // Update the schedule in context
-        console.log("newSchedule", newSchedule);
         setCurrentSchedule(newSchedule);
       }
     } catch (error) {

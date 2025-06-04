@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from config import PROJECT_NAME, DESCRIPTION, VERSION, CORS_ORIGINS
 from db import db_manager
 from routes import api_router
+from routes.places import router as places_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -67,6 +68,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include all routes
 app.include_router(api_router)
+app.include_router(places_router)
 
 @app.on_event("startup")
 async def startup_event():

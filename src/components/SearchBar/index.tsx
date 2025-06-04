@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 import './index.css';
 import { MapService } from '../../services/mapService';
@@ -15,13 +15,16 @@ function useSearchBarLogic(onSearchResults?: (places: Place[]) => void, mapCente
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    setIsSearching(true);
-    const results = await MapService.searchPlaces(searchQuery, mapCenter);
-    setIsSearching(false);
-    if (onSearchResults) onSearchResults(results);
+  const performSearch = async () => {
+    if (searchQuery.trim()) {
+      setIsSearching(true);
+      const results = await MapService.searchPlaces(searchQuery, mapCenter);
+      setIsSearching(false);
+      if (onSearchResults) onSearchResults(results);
+    } else {
+      // Clear results if search query is empty
+      if (onSearchResults) onSearchResults([]);
+    }
   };
 
   const clearSearch = () => {
@@ -33,7 +36,7 @@ function useSearchBarLogic(onSearchResults?: (places: Place[]) => void, mapCente
     searchQuery,
     setSearchQuery,
     isSearching,
-    handleSearch,
+    performSearch, // Expose performSearch to be called by onSubmit
     clearSearch,
   };
 }
@@ -44,7 +47,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearchResults, mapCenter
 
   return (
     <div className="search-container">
-      <form className="search-form" onSubmit={logic.handleSearch}>
+      <form className="search-form" onSubmit={(e) => {
+        e.preventDefault();
+        logic.performSearch(); // Call performSearch on form submission
+      }}>
         <div className="search-input-container">
           <Search size={16} className="search-icon" />
           <input
