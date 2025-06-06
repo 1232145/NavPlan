@@ -9,6 +9,10 @@ const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 // This cache is still useful for Place Details, even with the new API
 const placeDetailsCache: Map<string, Place> = new Map();
 
+// Cache for search results (searchText and searchNearby)
+const searchResultsCache: Map<string, { data: Place[]; timestamp: number }> = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
 // Helper to map new Places API response to existing Place interface
 // This function will need to be comprehensive to handle all fields you need.
 function mapNewPlaceToPlace(newPlace: any): Place {
@@ -64,6 +68,12 @@ function mapNewPlaceToPlace(newPlace: any): Place {
 
 export const MapService = {
   searchPlaces: async (query: string, center?: Coordinates): Promise<Place[]> => {
+    const cacheKey = JSON.stringify({ query, center });
+    const cached = searchResultsCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+      return cached.data;
+    }
+
     const url = "/places:searchText"; // Updated to hit backend proxy
     const headers = {
       "Content-Type": "application/json",
@@ -88,7 +98,9 @@ export const MapService = {
     try {
       const response = await api.post(url, data, { headers });
       if (response.data && response.data.places) {
-        return response.data.places.map(mapNewPlaceToPlace);
+        const mappedPlaces = response.data.places.map(mapNewPlaceToPlace);
+        searchResultsCache.set(cacheKey, { data: mappedPlaces, timestamp: Date.now() }); // Cache the results
+        return mappedPlaces;
       }
       return [];
     } catch (error: any) {
@@ -98,6 +110,12 @@ export const MapService = {
   },
 
   searchNearby: async (center: Coordinates, radius = 5000, type?: string): Promise<Place[]> => {
+    const cacheKey = JSON.stringify({ center, radius, type });
+    const cached = searchResultsCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+      return cached.data;
+    }
+
     const url = "/places:searchNearby"; // Updated to hit backend proxy
     const headers = {
       "Content-Type": "application/json",
@@ -122,7 +140,9 @@ export const MapService = {
     try {
       const response = await api.post(url, data, { headers });
       if (response.data && response.data.places) {
-        return response.data.places.map(mapNewPlaceToPlace);
+        const mappedPlaces = response.data.places.map(mapNewPlaceToPlace);
+        searchResultsCache.set(cacheKey, { data: mappedPlaces, timestamp: Date.now() }); // Cache the results
+        return mappedPlaces;
       }
       return [];
     } catch (error: any) {

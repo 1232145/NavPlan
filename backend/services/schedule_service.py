@@ -232,7 +232,6 @@ async def calculate_travel_data(places: List[Dict[str, Any]], travel_mode: str =
                 origin = places[i]
                 destination = places[i + 1]
                 
-                # Extract location from our frontend structure
                 origin_location = origin.get('location', {})
                 dest_location = destination.get('location', {})
                 
@@ -240,8 +239,7 @@ async def calculate_travel_data(places: List[Dict[str, Any]], travel_mode: str =
                 origin_lng = origin_location.get('lng', 0)
                 dest_lat = dest_location.get('lat', 0)
                 dest_lng = dest_location.get('lng', 0)
-                
-                # Skip API call if locations are invalid
+
                 if not all([origin_lat, origin_lng, dest_lat, dest_lng]):
                     logger.warning(f"Invalid coordinates: origin={origin_lat},{origin_lng}, dest={dest_lat},{dest_lng}")
                     travel_data.append((900, 5000, ""))  # Default 15 mins, 5km

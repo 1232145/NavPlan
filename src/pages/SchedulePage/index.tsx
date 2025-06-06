@@ -20,7 +20,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Button } from '../../components/Button';
 import DirectionsMap from '../../components/DirectionsMap';
-import { scheduleService } from '../../services/scheduleService';
+import { Place } from '../../types';
 import './index.css';
 
 // Default location (New York) as fallback
@@ -38,11 +38,11 @@ const TRAVEL_MODES = [
 const markerColors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#FF9800', '#9C27B0', '#795548'];
 
 const SchedulePage: React.FC = () => {
-  const { currentSchedule, favoritePlaces, setCurrentSchedule } = useAppContext();
+  const { currentSchedule, favoritePlaces, generateSchedule, isLoading: isAppContextLoading } = useAppContext();
   const navigate = useNavigate();
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [travelMode, setTravelMode] = useState("walking");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isUpdatingTravelMode, setIsUpdatingTravelMode] = useState(false);
 
   // Set initial map center based on first place
   useEffect(() => {
@@ -63,70 +63,50 @@ const SchedulePage: React.FC = () => {
         });
       }
     }
-
   }, [currentSchedule, navigate]);
 
   const handleBackToMap = () => {
     navigate('/map');
   };
 
-  const handleTravelModeChange = async (mode: string) => {
-    if (mode === travelMode || !favoritePlaces.length) return;
-
+  const handleTravelModeChange = async (newMode: string) => {
+    if (newMode === travelMode || !currentSchedule || currentSchedule.items.length === 0) return;
+    
     try {
-      setIsLoading(true);
-      setTravelMode(mode);
+      setIsUpdatingTravelMode(true);
 
-      // Only regenerate the schedule if we have places
-      if (favoritePlaces.length > 1) {
-        // Get the start time from the current schedule or use default
-        const startTime = currentSchedule!.items[0]?.start_time || "09:00";
+      // Get the start time from the current schedule or use default
+      const startTime = currentSchedule.items[0]?.start_time || "09:00";
 
-        // Create a map of favorite places by ID for easy lookup
-        const favoritePlacesMap = new Map(favoritePlaces.map(p => [p.id, p]));
+      // Create a map of favorite places by ID for easy lookup if needed for `placesWithAiReview`.
+      const placesForUpdate = currentSchedule.items.map(item => ({
+        id: item.place_id,
+        name: item.name,
+        location: item.travel_to_next?.start_location || { lat: 0, lng: 0 },
+        placeType: item.placeType || 'unknown',
+        address: item.address || '',
+        ai_review: item.ai_review || null,
+      }));
 
-        // Reconstruct places to send to backend, preserving ai_review
-        const placesWithAiReview = currentSchedule!.items.map(item => {
-          const originalPlace = favoritePlacesMap.get(item.place_id);
-          if (originalPlace) {
-            // Create a new object to avoid modifying the original favoritePlaces
-            return {
-              ...originalPlace,
-              ai_review: item.ai_review || null // Ensure ai_review is carried over, or null if not present
-            };
-          }
-          // Fallback if original place not found (should ideally not happen)
-          // Ensure all required 'Place' properties are included
-          return {
-            id: item.place_id,
-            name: item.name,
-            location: item.travel_to_next?.start_location || { lat: 0, lng: 0 },
-            placeType: item.placeType,
-            address: item.address,
-            ai_review: item.ai_review || null
-          };
-        });
-
-        const newSchedule = await scheduleService.generateSchedule(
-          placesWithAiReview, // Pass the reconstructed places with ai_review
-          startTime,
-          mode,
-          undefined, // Pass undefined for prompt when only travel mode changes
-          currentSchedule!.day_overview, // Pass day_overview as the dayOverview argument
-        );
-
-        // Update the schedule in context
-        setCurrentSchedule(newSchedule);
-      }
+      // Call generateSchedule from AppContext for the update
+      await generateSchedule(
+        startTime,
+        newMode,
+        undefined,
+        placesForUpdate as Place[],
+        currentSchedule.day_overview
+      );
+      setTravelMode(newMode);
+      
     } catch (error) {
       console.error("Failed to update schedule with new travel mode:", error);
     } finally {
-      setIsLoading(false);
+      setIsUpdatingTravelMode(false);
     }
   };
 
   if (!currentSchedule) {
-    return <div className="schedule-loading">Loading your schedule...</div>;
+    return <div className="schedule-loading">{isAppContextLoading ? 'Generating your initial schedule...' : 'Loading your schedule...'}</div>;
   }
 
   return (
@@ -149,6 +129,14 @@ const SchedulePage: React.FC = () => {
         </div>
       )}
 
+      {/* AI Place Selection Info */}
+      {favoritePlaces.length > 0 && currentSchedule.items.length < favoritePlaces.length && (
+        <div className="ai-selection-info">
+          <span className="ai-icon">✨</span>
+          <p>AI selected {currentSchedule.items.length} out of {favoritePlaces.length} places for an optimal day itinerary.</p>
+        </div>
+      )}
+
       {/* Travel mode selector */}
       <div className="travel-mode-selector">
         <div className="travel-mode-label">Travel mode:</div>
@@ -159,14 +147,14 @@ const SchedulePage: React.FC = () => {
               className={`travel-mode-option ${travelMode === mode.value ? 'active' : ''}`}
               onClick={() => handleTravelModeChange(mode.value)}
               title={mode.label}
-              disabled={isLoading}
+              disabled={isUpdatingTravelMode || isAppContextLoading}
             >
               <span className="travel-mode-icon">{mode.icon}</span>
               <span className="travel-mode-text">{mode.label}</span>
             </button>
           ))}
         </div>
-        {isLoading && <div className="loading-indicator">Updating schedule...</div>}
+        {(isUpdatingTravelMode || isAppContextLoading) && <div className="loading-indicator">Updating schedule...</div>}
       </div>
 
       {/* Map with route */}

@@ -183,21 +183,20 @@ html {
 }
 
 .place-ai-review {
-  background-color: #f0fdf4;
-  border-left: 4px solid #28a745;
-  padding: 10px 15px;
-  margin-top: 15px;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #218838;
+  background-color: #f9f9fa;
+  border-left: 3px solid #4285F4;
+  padding: 8px 12px;
+  margin-top: 10px;
+  font-style: italic;
+  font-size: 0.9em;
+  color: #444;
   display: flex;
   align-items: flex-start;
 }
 
 .place-ai-review .ai-icon {
-  font-size: 20px;
   margin-right: 8px;
-  color: #28a745;
+  color: #4285F4;
 }
 
 .travel-segment {
@@ -428,14 +427,13 @@ html {
 /* AI Day Overview Styling */
 .ai-overview-note {
   background-color: #e6f7ff;
-  border-left: 5px solid #1890ff;
-  padding: 20px 25px;
-  margin: 30px 0;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  font-size: 16px;
-  line-height: 1.6;
-  color: #333;
+  border: 1px solid #91d5ff;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 16px 0;
+  font-size: 0.9rem;
+  color: #0050b3;
+  line-height: 1.5;
 }
 
 .ai-overview-note h2 {
@@ -455,4 +453,27 @@ html {
 
 .ai-overview-note p {
   margin-bottom: 0;
+}
+
+.ai-selection-info {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 16px 0 10px;
+  display: flex;
+  align-items: flex-start;
+  font-size: 0.9rem;
+  color: #135200;
+}
+
+.ai-selection-info .ai-icon {
+  font-size: 1.2rem;
+  margin-right: 10px;
+  line-height: 1.4;
+}
+
+.ai-selection-info p {
+  margin: 0;
+  flex-grow: 1;
 } 
