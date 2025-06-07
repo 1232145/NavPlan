@@ -111,10 +111,10 @@ const SchedulePage: React.FC = () => {
             )}
 
             {/* AI Place Selection Info */}
-            {favoritePlaces.length > 0 && currentSchedule.items.length < favoritePlaces.length && (
+            {currentSchedule.total_places !== undefined && currentSchedule.items.length < currentSchedule.total_places && (
               <div className="ai-selection-info">
                 <span className="ai-icon">✨</span>
-                <p>AI selected {currentSchedule.items.length} out of {favoritePlaces.length} places for an optimal day itinerary.</p>
+                <p>AI selected {currentSchedule.items.length} out of {currentSchedule.total_places} places for an optimal day itinerary.</p>
               </div>
             )}
 
@@ -144,7 +144,7 @@ const SchedulePage: React.FC = () => {
                 travelMode={travelMode}
               />
           </div>
-          <ScheduleTimelinePanel />
+          <ScheduleTimelinePanel travelMode={travelMode} />
         </div>
       </div>
     </div>

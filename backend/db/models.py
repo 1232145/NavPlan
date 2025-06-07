@@ -25,7 +25,6 @@ class ScheduleItem(BaseModel):
     start_time: str
     end_time: str
     duration_minutes: int
-    activity: Optional[str] = None
     travel_to_next: Optional[RouteSegment] = None
     ai_review: Optional[str] = None
     address: Optional[str] = None

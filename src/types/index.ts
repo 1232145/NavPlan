@@ -47,7 +47,6 @@ export interface ScheduleItem {
   start_time: string;
   end_time: string;
   duration_minutes: number;
-  activity: string;
   travel_to_next?: RouteSegment;
   placeType: string;
   address: string;
@@ -59,4 +58,5 @@ export interface Schedule {
   total_duration_minutes: number;
   total_distance_meters: number;
   day_overview?: string;
+  total_places?: number;
 }

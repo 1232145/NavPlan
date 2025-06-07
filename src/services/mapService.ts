@@ -6,12 +6,25 @@ import api from './api/axios'; // Assuming you have an axios instance
 // This API key is used on the frontend ONLY for constructing publicly accessible photo URLs.
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-// This cache is still useful for Place Details, even with the new API
-const placeDetailsCache: Map<string, Place> = new Map();
+// Cache TTL - 5 minutes for search results, 1 hour for place details
+const SEARCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const PLACE_DETAILS_CACHE_TTL = 60 * 60 * 1000; // 1 hour
 
-// Cache for search results (searchText and searchNearby)
-const searchResultsCache: Map<string, { data: Place[]; timestamp: number }> = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+// In-memory cache for Place Details
+interface CachedPlace {
+  place: Place;
+  timestamp: number;
+}
+
+// In-memory cache for search results
+interface CachedSearchResults {
+  places: Place[];
+  timestamp: number;
+}
+
+// Cache structures
+const placeDetailsCache = new Map<string, CachedPlace>();
+const searchResultsCache = new Map<string, CachedSearchResults>();
 
 // Helper to map new Places API response to existing Place interface
 // This function will need to be comprehensive to handle all fields you need.
@@ -70,8 +83,10 @@ export const MapService = {
   searchPlaces: async (query: string, center?: Coordinates): Promise<Place[]> => {
     const cacheKey = JSON.stringify({ query, center });
     const cached = searchResultsCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-      return cached.data;
+    
+    if (cached && (Date.now() - cached.timestamp < SEARCH_CACHE_TTL)) {
+      console.log(`Using cached search results for: ${query}`);
+      return cached.places;
     }
 
     const url = "/places:searchText"; // Updated to hit backend proxy
@@ -99,7 +114,14 @@ export const MapService = {
       const response = await api.post(url, data, { headers });
       if (response.data && response.data.places) {
         const mappedPlaces = response.data.places.map(mapNewPlaceToPlace);
-        searchResultsCache.set(cacheKey, { data: mappedPlaces, timestamp: Date.now() }); // Cache the results
+        
+        // Cache the results
+        searchResultsCache.set(cacheKey, { 
+          places: mappedPlaces, 
+          timestamp: Date.now() 
+        });
+        console.log(`Cached search results for: ${query}`);
+        
         return mappedPlaces;
       }
       return [];
@@ -112,8 +134,10 @@ export const MapService = {
   searchNearby: async (center: Coordinates, radius = 5000, type?: string): Promise<Place[]> => {
     const cacheKey = JSON.stringify({ center, radius, type });
     const cached = searchResultsCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-      return cached.data;
+    
+    if (cached && (Date.now() - cached.timestamp < SEARCH_CACHE_TTL)) {
+      console.log(`Using cached nearby results for: ${JSON.stringify(center)}, radius: ${radius}, type: ${type || 'all'}`);
+      return cached.places;
     }
 
     const url = "/places:searchNearby"; // Updated to hit backend proxy
@@ -141,7 +165,14 @@ export const MapService = {
       const response = await api.post(url, data, { headers });
       if (response.data && response.data.places) {
         const mappedPlaces = response.data.places.map(mapNewPlaceToPlace);
-        searchResultsCache.set(cacheKey, { data: mappedPlaces, timestamp: Date.now() }); // Cache the results
+        
+        // Cache the results
+        searchResultsCache.set(cacheKey, { 
+          places: mappedPlaces, 
+          timestamp: Date.now() 
+        });
+        console.log(`Cached nearby results for: ${JSON.stringify(center)}, radius: ${radius}, type: ${type || 'all'}`);
+        
         return mappedPlaces;
       }
       return [];
@@ -153,8 +184,10 @@ export const MapService = {
 
   getPlaceDetails: async (placeId: string): Promise<Place | null> => {
     // Check cache first
-    if (placeDetailsCache.has(placeId)) {
-      return placeDetailsCache.get(placeId)!;
+    const cached = placeDetailsCache.get(placeId);
+    if (cached && (Date.now() - cached.timestamp < PLACE_DETAILS_CACHE_TTL)) {
+      console.log(`Using cached place details for: ${placeId}`);
+      return cached.place;
     }
 
     const url = `/places/${placeId}`; // Updated to hit backend proxy
@@ -166,7 +199,14 @@ export const MapService = {
       const response = await api.get(url, { headers });
       if (response.data) {
         const mappedPlace = mapNewPlaceToPlace(response.data);
-        placeDetailsCache.set(placeId, mappedPlace);
+        
+        // Cache the place details
+        placeDetailsCache.set(placeId, {
+          place: mappedPlace,
+          timestamp: Date.now()
+        });
+        console.log(`Cached place details for: ${placeId}`);
+        
         return mappedPlace;
       }
       return null;
@@ -175,4 +215,31 @@ export const MapService = {
       return null;
     }
   },
+  
+  /**
+   * Clear all caches
+   * 
+   * This can be used to force fresh data fetching.
+   */
+  clearAllCaches(): void {
+    searchResultsCache.clear();
+    placeDetailsCache.clear();
+    console.log("All map caches cleared");
+  },
+  
+  /**
+   * Clear only the search results cache
+   */
+  clearSearchCache(): void {
+    searchResultsCache.clear();
+    console.log("Search results cache cleared");
+  },
+  
+  /**
+   * Clear only the place details cache
+   */
+  clearPlaceDetailsCache(): void {
+    placeDetailsCache.clear();
+    console.log("Place details cache cleared");
+  }
 };

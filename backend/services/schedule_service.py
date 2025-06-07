@@ -105,9 +105,6 @@ async def generate_schedule(
             visit_start_str = visit_start_datetime.strftime('%H:%M')
             visit_end_str = visit_end_datetime.strftime('%H:%M')
             
-            # Create activity description
-            activity = generate_activity_description(place)
-            
             # Get AI review if present
             ai_review = place.get('ai_review')
             
@@ -118,7 +115,6 @@ async def generate_schedule(
                 start_time=visit_start_str,
                 end_time=visit_end_str,
                 duration_minutes=visit_duration_minutes,
-                activity=activity,
                 ai_review=ai_review,
                 address=address,
                 placeType=place_type
@@ -338,36 +334,6 @@ def get_visit_duration(place_types: List[str]) -> int:
         if place_type and place_type.lower() in DEFAULT_VISIT_DURATION_MINUTES:
             return DEFAULT_VISIT_DURATION_MINUTES[place_type.lower()]
     return DEFAULT_VISIT_DURATION_MINUTES["default"]
-
-def generate_activity_description(place: Dict[str, Any]) -> str:
-    """
-    Generate a description of the activity based on place type
-    
-    Args:
-        place: Place dictionary with name and placeType
-        
-    Returns:
-        Activity description string
-    """
-    place_name = place.get('name', 'this place')
-    place_type = place.get('placeType', '').lower()
-    
-    activities = {
-        "restaurant": f"Eat at {place_name}",
-        "cafe": f"Have a coffee at {place_name}",
-        "bar": f"Have a drink at {place_name}",
-        "museum": f"Explore {place_name}",
-        "art_gallery": f"View art at {place_name}",
-        "park": f"Relax at {place_name}",
-        "shopping_mall": f"Shop at {place_name}",
-        "tourist_attraction": f"Visit {place_name}",
-        "amusement_park": f"Have fun at {place_name}",
-        "zoo": f"See animals at {place_name}",
-        "aquarium": f"See marine life at {place_name}",
-        "church": f"Visit {place_name}"
-    }
-    
-    return activities.get(place_type, f"Visit {place_name}")
 
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """

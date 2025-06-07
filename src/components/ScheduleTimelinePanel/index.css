@@ -10,7 +10,6 @@
   margin: 20px 0;
   border-radius: 20px;
   height: calc(100% - 20px);
-
 }
 
 .schedule-timeline-panel.expanded {
@@ -78,14 +77,43 @@
   font-size: 0.9em;
 }
 
+.place-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  margin-left: 34px;
+}
+
+.place-info-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.place-info-icon {
+  color: #4285F4;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
 .schedule-timeline-panel .schedule-place-type {
-  color: var(--text-secondary);
+  color: #5f6368;
   font-size: 0.9em;
+  font-weight: 500;
+  text-transform: capitalize;
+  background-color: #f1f3f4;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
 }
 
 .schedule-timeline-panel .schedule-place-address {
-  color: var(--text-secondary);
+  color: #5f6368;
   font-size: 0.9em;
+  line-height: 1.4;
+  overflow-wrap: break-word;
+  display: inline-block;
 }
 
 .schedule-timeline-panel .place-ai-review {

@@ -1,5 +1,28 @@
 import api from './api/axios';
-import { Place, Schedule } from '../types';
+import { Place, Schedule, ScheduleItem } from '../types';
+
+// Cache TTL - 1 hour (in milliseconds)
+const CACHE_TTL = 60 * 60 * 1000;
+
+// Cache for schedules
+interface CachedSchedule {
+  schedule: Schedule;
+  timestamp: number;
+}
+
+// In-memory cache
+const schedulesCache = new Map<string, CachedSchedule>();
+
+// Generate a cache key from schedule parameters
+const generateCacheKey = (
+  places: Place[], 
+  startTime: string, 
+  travelMode: string,
+  dayOverview?: string
+): string => {
+  const placeIds = places.map(place => place.id).sort().join(',');
+  return `${placeIds}|${startTime}|${travelMode}|${dayOverview || ''}`;
+};
 
 export const scheduleService = {
   /**
@@ -22,7 +45,23 @@ export const scheduleService = {
     travelMode: string = "walking",
     prompt?: string,
     dayOverview?: string,
+    total_places?: number
   ): Promise<Schedule> {
+    // If this is an update request (has dayOverview), check cache
+    const isUpdateRequest = !!dayOverview;
+    const cacheKey = generateCacheKey(places, startTime, travelMode, dayOverview);
+    
+    // Only check cache for update requests, not for new schedule generation
+    if (isUpdateRequest) {
+      const cached = schedulesCache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
+        console.log(`Using cached schedule for: ${cacheKey}`);
+        return cached.schedule;
+      }
+    } else {
+      console.log("Generating a new schedule, bypassing cache read");
+    }
+    
     const response = await api.post('/schedules', {
       places,
       start_time: startTime,
@@ -31,16 +70,37 @@ export const scheduleService = {
       day_overview: dayOverview,
     });
     
-    // The backend response includes the schedule in response.data.schedule
-    // and other metadata like selected_place_count in response.data
-    // For now, we only care about the schedule object itself for the return type.
-    // If AppContext needs more data (like selected_place_count for some logic),
-    // this service could return response.data instead of just response.data.schedule.
-    // However, the existing type hint is Promise<Schedule>.
-    // The actual response structure from backend is { schedule: Schedule, optimized: boolean, ... }
-    // So, returning response.data.schedule is correct if only Schedule is needed.
-    // If the caller (AppContext) needs the other fields like 'optimized', this would need to change.
-    // Based on current AppContext.generateSchedule, it only uses the schedule object.
-    return response.data.schedule;
+    const schedule = response.data.schedule;
+    schedule.total_places = total_places;
+    
+    // Cache the newly fetched schedule - for both new and update requests
+    // For new schedules, we'll cache based on the returned schedule items
+    // which might be a subset of the original places
+    const effectiveCacheKey = isUpdateRequest ? 
+      cacheKey : 
+      generateCacheKey(
+        schedule.items.map((item: ScheduleItem) => ({ id: item.place_id, name: item.name })) as Place[],
+        startTime,
+        travelMode
+      );
+    
+    schedulesCache.set(effectiveCacheKey, { 
+      schedule, 
+      timestamp: Date.now() 
+    });
+    console.log(`Cached schedule for: ${effectiveCacheKey}`);
+    
+    return schedule;
+  },
+  
+  /**
+   * Clear the schedule cache
+   * 
+   * This can be used to force a fresh schedule generation
+   * when user preferences change or when schedules might be stale.
+   */
+  clearCache(): void {
+    schedulesCache.clear();
+    console.log("Schedule cache cleared");
   }
 }; 
