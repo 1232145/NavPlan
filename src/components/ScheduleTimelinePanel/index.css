@@ -1,0 +1,159 @@
+.schedule-timeline-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border-left: 1px solid var(--border-color);
+  overflow-y: auto;
+  transition: width 0.3s ease-in-out;
+  flex-shrink: 0;
+  margin: 20px 0;
+  border-radius: 20px;
+  height: calc(100% - 20px);
+
+}
+
+.schedule-timeline-panel.expanded {
+  width: 400px;
+}
+
+.schedule-timeline-panel .schedule-summary {
+  padding: 15px;
+  margin-top: 12px;
+  background-color: var(--background-color);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.schedule-timeline-panel .schedule-items-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-timeline-panel .schedule-item-card {
+  background-color: white;
+  border-radius: 12px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  margin: 10px 0;
+}
+
+.schedule-timeline-panel .schedule-time-infor {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.schedule-timeline-panel .schedule-place-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.schedule-timeline-panel .schedule-place-details h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.schedule-timeline-panel .place-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.9em;
+}
+
+.schedule-timeline-panel .schedule-place-type {
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}
+
+.schedule-timeline-panel .schedule-place-address {
+  color: var(--text-secondary);
+  font-size: 0.9em;
+}
+
+.schedule-timeline-panel .place-ai-review {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f9f9fa;
+  border-radius: 4px;
+  font-size: 0.9em;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  position: relative;
+}
+
+.schedule-timeline-panel .time {
+  color: var(--color-primary-500);
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.schedule-timeline-panel .ai-icon {
+  font-size: 1.2em;
+  position: relative;
+  padding-right: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.schedule-timeline-panel .ai-icon::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 2px;
+  background-color: #4285F4;
+}
+
+.schedule-timeline-panel .travel-segment-card {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.schedule-timeline-panel .travel-infor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.schedule-timeline-panel .travel-icon {
+  font-size: 1.2em;
+}
+
+.schedule-timeline-panel .travel-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.schedule-timeline-panel .empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  font-size: 1.2em;
+} 

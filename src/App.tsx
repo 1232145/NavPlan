@@ -58,6 +58,11 @@ function AppRoutes() {
       {isLoading && <LoadingScreen />}
       <Routes>
         <Route path="/error" element={<ErrorPage />} />
+        <Route path="/schedule" element={
+          <SessionGuard>
+            <SchedulePage />
+          </SessionGuard>
+        } />
         <Route element={<SessionGuard>
           <MainLayout>
             <Outlet />
@@ -65,7 +70,6 @@ function AppRoutes() {
         </SessionGuard>}>
           <Route path="/" element={<LandingPage />} />
           <Route path="/map" element={<MapPage />} />
-          <Route path="/schedule" element={<SchedulePage />} />
           <Route path="/lists" element={<ArchivedListsPage />} />
         </Route>
       </Routes>
