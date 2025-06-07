@@ -28,6 +28,8 @@ class ScheduleItem(BaseModel):
     activity: Optional[str] = None
     travel_to_next: Optional[RouteSegment] = None
     ai_review: Optional[str] = None
+    address: Optional[str] = None
+    placeType: Optional[str] = None
 
 class Schedule(BaseModel):
     """Model for a complete schedule"""
