@@ -3,7 +3,7 @@ import { useAppContext } from '../../context/AppContext';
 import './index.css';
 import { Button } from '../../components/Button';
 import { useNavigate } from 'react-router-dom';
-import { ArchivedList } from '../../types';
+import { ArchivedList, Place } from '../../types';
 import { archivedListService } from '../../services/archivedListService';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -11,13 +11,75 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import LoadingScreen from '../../components/LoadingScreen';
+import NavbarColumn from '../../components/NavbarColumn';
+import { 
+  Map, 
+  Calendar, 
+  Clock, 
+  ListChecks, 
+  Navigation, 
+  MapPin, 
+  Info, 
+  Coffee, 
+  Utensils, 
+  LandPlot, 
+  Building, 
+  Landmark, 
+  ShoppingBag
+} from 'lucide-react';
+
+// Helper to get the icon for a place type
+const getPlaceTypeIcon = (placeType: string) => {
+  const type = placeType.toLowerCase();
+  if (type.includes('restaurant') || type.includes('food')) return <Utensils size={16} />;
+  if (type.includes('cafe') || type.includes('coffee')) return <Coffee size={16} />;
+  if (type.includes('park') || type.includes('garden')) return <LandPlot size={16} />;
+  if (type.includes('museum') || type.includes('gallery') || type.includes('attraction')) return <Landmark size={16} />;
+  if (type.includes('store') || type.includes('shop') || type.includes('mall')) return <ShoppingBag size={16} />;
+  return <Building size={16} />;
+};
+
+// Helper to format date nicely
+const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString(undefined, { 
+    weekday: 'short', 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  });
+};
+
+// Helper to calculate category counts
+const getCategoryCounts = (places: Place[]) => {
+  const categories: Record<string, number> = {};
+  
+  places.forEach(place => {
+    const type = place.placeType.toLowerCase();
+    let category = 'other';
+    
+    if (type.includes('restaurant') || type.includes('food')) {
+      category = 'food';
+    } else if (type.includes('museum') || type.includes('gallery') || type.includes('attraction')) {
+      category = 'attraction';
+    } else if (type.includes('park') || type.includes('garden')) {
+      category = 'outdoor';
+    } else if (type.includes('store') || type.includes('shop') || type.includes('mall')) {
+      category = 'shopping';
+    }
+    
+    categories[category] = (categories[category] || 0) + 1;
+  });
+  
+  return categories;
+};
 
 const ArchivedListsPage: React.FC = () => {
   const { generateSchedule } = useAppContext();
   const [archivedLists, setArchivedLists] = useState<ArchivedList[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string[]>([]);
   const navigate = useNavigate();
   
   // Schedule modal state for choosing start time
@@ -43,10 +105,6 @@ const ArchivedListsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const onBack = () => {
-    navigate('/map');
   };
 
   const handleGenerateSchedule = (list: ArchivedList) => {
@@ -90,132 +148,226 @@ const ArchivedListsPage: React.FC = () => {
 
   if (error) {
     return (
-      <div className="archived-lists-page">
-        <Button variant="primary" size="md" onClick={onBack} style={{ marginBottom: 24 }}>
-          Back to Map
-        </Button>
-        <div className="error-state">{error}</div>
+      <div className="archived-page-layout">
+        <NavbarColumn />
+        <div className="archived-lists-content">
+          <div className="error-state">{error}</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="archived-lists-page">
-      <Button variant="primary" size="md" onClick={onBack} style={{ marginBottom: 24 }}>
-        Back to Map
-      </Button>
-      <h2 className="archived-title">Archived Lists</h2>
-      
-      {/* Schedule Modal */}
-      <Dialog 
-        open={scheduleOpen} 
-        onClose={handleScheduleClose} 
-        maxWidth="xs" 
-        fullWidth
-        aria-labelledby="schedule-dialog-title"
-      >
-        <DialogTitle id="schedule-dialog-title">Generate Schedule</DialogTitle>
-        <DialogContent>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '8px' }}>
-            <div style={{ flex: 1 }}>
-              <p>Start time:</p>
-              <TextField
-                type="time"
-                fullWidth
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                margin="dense"
-                InputLabelProps={{ shrink: true }}
-              />
+    <div className="archived-page-layout">
+      <NavbarColumn />
+      <div className="archived-lists-content">
+        {/* Schedule Modal */}
+        <Dialog 
+          open={scheduleOpen} 
+          onClose={handleScheduleClose} 
+          maxWidth="xs" 
+          fullWidth
+          aria-labelledby="schedule-dialog-title"
+        >
+          <DialogTitle id="schedule-dialog-title">
+            <div className="dialog-title-content">
+              <Map size={20} />
+              Generate Schedule
             </div>
-            <div style={{ flex: 1 }}>
-              <p>End time:</p>
-              <TextField
-                type="time"
-                fullWidth
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                margin="dense"
-                InputLabelProps={{ shrink: true }}
-              />
-            </div>
-          </div>
-          
-          <p style={{ marginTop: '16px' }}>Custom preferences (optional):</p>
-          <TextField
-            multiline
-            rows={3}
-            fullWidth
-            placeholder="E.g., 'Focus on outdoor activities' or 'Include more food stops'"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            margin="dense"
-            label="Preferences"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button variant="default" size="sm" onClick={handleScheduleClose}>Cancel</Button>
-          <Button 
-            variant="primary" 
-            size="sm" 
-            onClick={handleScheduleConfirm}
-          >
-            Generate
-          </Button>
-        </DialogActions>
-      </Dialog>
-      
-      {archivedLists.length === 0 ? (
-        <p className="archived-empty">No archived lists yet.</p>
-      ) : (
-        <div className="archived-list-container">
-          {archivedLists.map(list => (
-            <div key={list.id} className="archived-list-folder">
-              <div className="archived-list-header" onClick={() => setExpanded(expanded === list.id ? null : list.id)}>
-                <div>
-                  <div className="archived-list-name">{list.name}</div>
-                  <div className="archived-list-date">{new Date(list.date).toLocaleString()}</div>
+          </DialogTitle>
+          <DialogContent>
+            <div className="schedule-dialog-content">
+              <p className="schedule-dialog-label">
+                <Clock size={16} /> Set your schedule time range:
+              </p>
+              <div className="time-inputs-container">
+                <div className="time-input-group">
+                  <p>Start time:</p>
+                  <TextField
+                    type="time"
+                    fullWidth
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    margin="dense"
+                    InputLabelProps={{ shrink: true }}
+                  />
                 </div>
-                <span className="archived-expand-icon">{expanded === list.id ? '▼' : '▶'}</span>
+                <div className="time-input-group">
+                  <p>End time:</p>
+                  <TextField
+                    type="time"
+                    fullWidth
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    margin="dense"
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </div>
               </div>
-              {expanded === list.id && (
-                <div className="archived-list-places">
-                  {list.places.length === 0 ? (
-                    <div className="archived-list-empty">No places in this list.</div>
-                  ) : (
-                    <>
+              
+              <p className="schedule-dialog-label">
+                <Info size={16} /> Custom preferences (optional):
+              </p>
+              <TextField
+                multiline
+                rows={3}
+                fullWidth
+                placeholder="E.g., 'Focus on outdoor activities' or 'Include more food stops'"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                margin="dense"
+              />
+
+              <div className="schedule-summary-info">
+                <div className="schedule-summary-icon"><ListChecks size={16} /></div>
+                <p>
+                  Generating a schedule for <strong>{selectedList?.places.length || 0} places</strong>.
+                  Our AI will optimize your day based on locations and preferences.
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+          <DialogActions className="schedule-dialog-actions">
+            <Button variant="default" size="sm" onClick={handleScheduleClose}>Cancel</Button>
+            <Button 
+              variant="primary" 
+              size="sm" 
+              onClick={handleScheduleConfirm}
+            >
+              Generate Schedule
+            </Button>
+          </DialogActions>
+        </Dialog>
+        
+        {archivedLists.length === 0 ? (
+          <div className="archived-empty">
+            <Map size={48} strokeWidth={1.5} />
+            <p>No saved lists yet</p>
+            <Button variant="primary" size="md" onClick={() => navigate('/map')}>
+              Go to Map
+            </Button>
+          </div>
+        ) : (
+          <div className="archived-list-container">
+            {archivedLists.map(list => {
+              const categoryCounts = getCategoryCounts(list.places);
+              
+              return (
+                <div key={list.id} className={`archived-list-card ${expanded.includes(list.id) ? 'expanded' : ''}`}>
+                  <div 
+                    className="archived-list-header" 
+                    onClick={() => {
+                      if (expanded.includes(list.id)) {
+                        setExpanded(expanded.filter(id => id !== list.id));
+                      } else {
+                        setExpanded([...expanded, list.id]);
+                      }
+                    }}
+                  >
+                    <div className="archived-list-icon">
+                      <Map size={20} />
+                    </div>
+                    <div className="archived-list-info">
+                      <div className="archived-list-name-row">
+                        <h3 className="archived-list-name">{list.name}</h3>
+                        <div className="archived-list-badge">
+                          {list.places.length} {list.places.length === 1 ? 'place' : 'places'}
+                        </div>
+                      </div>
+                      <div className="archived-list-details">
+                        <span className="archived-list-date">
+                          <Calendar size={14} />
+                          {formatDate(list.date)}
+                        </span>
+                        
+                        <div className="archived-list-categories">
+                          {Object.entries(categoryCounts).map(([category, count]) => (
+                            <span key={category} className={`category-badge category-${category}`}>
+                              {category}: {count}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      className="archived-expand-button"
+                      aria-label={expanded.includes(list.id) ? "Collapse" : "Expand"}
+                    >
+                      <span className="archived-expand-icon">{expanded.includes(list.id) ? '▼' : '▶'}</span>
+                    </button>
+                  </div>
+                  
+                  {expanded.includes(list.id) && (
+                    <div className="archived-list-content">
                       {list.note && (
                         <div className="archived-list-note">
-                          <strong>Note:</strong> {list.note}
+                          <Info size={16} />
+                          <p><span className="note-label">Your note:</span> {list.note}</p>
                         </div>
                       )}
-                      <Button 
-                        variant="secondary" 
-                        size="sm" 
-                        onClick={() => handleGenerateSchedule(list)}
-                        style={{ marginBottom: 12 }}
-                      >
-                        Generate Schedule
-                      </Button>
-                      <ul className="archived-place-list">
-                        {list.places.map(place => (
-                          <li key={place.id} className="archived-place-item">
-                            <div className="archived-place-name">{place.name}</div>
-                            <div className="archived-place-address">{place.address}</div>
-                            {place.note && (
-                              <div className="archived-place-note">{place.note}</div>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
+                      
+                      <div className="archived-list-actions">
+                        <Button 
+                          variant="secondary" 
+                          size="md" 
+                          onClick={() => handleGenerateSchedule(list)}
+                          className="generate-button"
+                        >
+                          <Navigation size={16} />
+                          Generate Schedule
+                        </Button>
+                      </div>
+                      
+                      {list.places.length === 0 ? (
+                        <div className="archived-list-empty">No places in this list.</div>
+                      ) : (
+                        <div className="archived-places-grid">
+                          {list.places.map((place, index) => (
+                            <div key={place.id} className="archived-place-card">
+                              <div className="place-number">{index + 1}</div>
+                              <div className="place-content">
+                                <div className="place-header">
+                                  <h4 className="archived-place-name">{place.name}</h4>
+                                  <div className="place-type-badge">
+                                    {getPlaceTypeIcon(place.placeType)}
+                                    <span>{place.placeType.replace(/_/g, ' ')}</span>
+                                  </div>
+                                </div>
+                                <div className="archived-place-address">
+                                  <MapPin size={14} />
+                                  {place.address}
+                                </div>
+                                {place.note && (
+                                  <div className="archived-place-note">
+                                    <span className="place-note-label">Note:</span> <span className="place-note-content">"{place.note}"</span>
+                                  </div>
+                                )}
+                                {place.rating && (
+                                  <div className="place-rating">
+                                    <span className="stars">
+                                      {'★'.repeat(Math.floor(place.rating))}
+                                      {place.rating % 1 >= 0.5 ? '½' : ''}
+                                      {'☆'.repeat(5 - Math.ceil(place.rating))}
+                                    </span>
+                                    <span className="rating-text">
+                                      {place.rating.toFixed(1)}
+                                      {place.userRatingCount ? ` (${place.userRatingCount})` : ''}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

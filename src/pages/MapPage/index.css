@@ -23,6 +23,15 @@
   padding-bottom: 20px; /* Original gap */
 }
 
+.search-bar-container {
+  position: absolute;
+  top: 20px;
+  left: 35%;
+  transform: translateX(-50%);
+  width: 600px;
+  z-index: 10;
+}
+
 .map-container {
   min-width: 0;
   min-height: 0;
@@ -42,4 +51,12 @@
   right: 20px; /* Align to the right of map-container-wrapper */
   top: 12px; /* Align with top padding of wrapper */
   background-color: white; /* Ensure it has a background */
+}
+
+/* Responsive styles for search bar */
+@media (max-width: 768px) {
+  .search-bar-container {
+    width: 90%;
+    max-width: 500px;
+  }
 } 

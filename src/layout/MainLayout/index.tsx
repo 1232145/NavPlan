@@ -8,7 +8,6 @@ const MainLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div className="main-layout">
       <Header
-        mapCenter={undefined}
         onMyListsClick={() => navigate('/lists')}
         onLogoClick={() => navigate('/')}
       />

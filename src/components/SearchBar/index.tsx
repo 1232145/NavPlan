@@ -11,16 +11,31 @@ export interface SearchBarProps {
 }
 
 // --- Custom Hook for Logic ---
-function useSearchBarLogic(onSearchResults?: (places: Place[]) => void, mapCenter?: { lat: number; lng: number }) {
+function useSearchBarLogic(onSearchResults?: (places: Place[]) => void, mapCenter?: Coordinates) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
   const performSearch = async () => {
     if (searchQuery.trim()) {
       setIsSearching(true);
-      const results = await MapService.searchPlaces(searchQuery, mapCenter);
-      setIsSearching(false);
-      if (onSearchResults) onSearchResults(results);
+      
+      try {
+        // Try text search first
+        let results = await MapService.searchPlaces(searchQuery, mapCenter);
+        
+        // If no results and we have mapCenter, try nearby search as fallback
+        if (results.length === 0 && mapCenter && mapCenter.lat && mapCenter.lng) {
+          results = await MapService.searchNearby(mapCenter, 10000);
+        }
+        
+        if (onSearchResults) onSearchResults(results);
+      } catch (error) {
+        console.error("Search error:", error);
+        // Return empty array on error
+        if (onSearchResults) onSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
     } else {
       // Clear results if search query is empty
       if (onSearchResults) onSearchResults([]);

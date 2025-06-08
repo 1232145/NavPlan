@@ -1,29 +1,21 @@
 import React from 'react';
 import { Map } from 'lucide-react';
 import './index.css';
-import { SearchBar } from '../../components/SearchBar';
-import { Coordinates, Place } from '../../types';
 import { Button } from '../../components/Button';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import api from '../../services/api/axios';
 
 export interface HeaderProps {
-  mapCenter?: Coordinates;
   onMyListsClick: () => void;
   onLogoClick: () => void;
 }
 
-// --- Utility for dispatching search results event ---
-function dispatchSearchResults(places: Place[]) {
-  window.dispatchEvent(new CustomEvent('search-places', { detail: places }));
-}
-
 // --- Main Component ---
-const Header: React.FC<HeaderProps> = ({ mapCenter, onMyListsClick, onLogoClick }) => {
+const Header: React.FC<HeaderProps> = ({ onMyListsClick, onLogoClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, setUser } = useAppContext();
+  const { setUser } = useAppContext();
   const isMapPage = location.pathname === '/map';
 
   const handleGoToMap = () => {
@@ -43,30 +35,21 @@ const Header: React.FC<HeaderProps> = ({ mapCenter, onMyListsClick, onLogoClick 
   return (
     <header className={`header ${isMapPage ? 'map-page' : ''}`}>
       <div className="header-content">
-        {!isMapPage && (
-          <div className="logo" style={{ cursor: 'pointer' }} onClick={onLogoClick}>
-            <Map size={28} />
-            <h1>NavPlan</h1>
-          </div>
-        )}
-        {isMapPage && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' /* Ensure search bar container takes full width */ }}>
-            <SearchBar onSearchResults={dispatchSearchResults} mapCenter={mapCenter} />
-          </div>
-        )}
-        {!isMapPage && (
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
-            <Button variant="primary" size="md" onClick={handleGoToMap}>
-              Go to Map
-            </Button>
-            <Button variant="primary" size="md" onClick={onMyListsClick}>
-              My Lists
-            </Button>
-            <Button variant="primary" size="md" onClick={handleSignOut}>
-              Sign Out
-            </Button>
-          </div>
-        )}
+        <div className="logo" style={{ cursor: 'pointer' }} onClick={onLogoClick}>
+          <Map size={28} />
+          <h1>NavPlan</h1>
+        </div>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
+          <Button variant="primary" size="md" onClick={handleGoToMap}>
+            Go to Map
+          </Button>
+          <Button variant="primary" size="md" onClick={onMyListsClick}>
+            My Lists
+          </Button>
+          <Button variant="primary" size="md" onClick={handleSignOut}>
+            Sign Out
+          </Button>
+        </div>
       </div>
     </header>
   );

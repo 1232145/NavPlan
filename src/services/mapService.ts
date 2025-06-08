@@ -94,24 +94,18 @@ export const MapService = {
       "Content-Type": "application/json",
     };
 
-    const data: any = {
+    const data = {
       textQuery: query,
       maxResults: 10, // Max results to control costs and processing
-      languageCode: "en",
-      regionCode: "US"
+      languageCode: "en"
     };
 
-    if (center) {
-      data.locationRestriction = {
-        circle: {
-          center: { latitude: center.lat, longitude: center.lng },
-          radius: 10000 // 10km radius
-        }
-      };
-    }
+    // We're not including locationRestriction because it's causing 422 errors
+    console.log("Sending simplified search request:", JSON.stringify(data));
 
     try {
       const response = await api.post(url, data, { headers });
+      
       if (response.data && response.data.places) {
         const mappedPlaces = response.data.places.map(mapNewPlaceToPlace);
         
@@ -127,6 +121,7 @@ export const MapService = {
       return [];
     } catch (error: any) {
       console.error("New Places API Text Search error:", error.response ? error.response.data : error.message, error);
+      // Don't throw the error - return empty array to prevent app crashes
       return [];
     }
   },
@@ -146,20 +141,13 @@ export const MapService = {
     };
 
     const data: any = {
-      locationRestriction: {
-        circle: {
-          center: { latitude: center.lat, longitude: center.lng },
-          radius: radius
-        }
-      },
+      textQuery: type || "", // Use type as a text query instead
       maxResults: 10,
-      languageCode: "en",
-      regionCode: "US"
+      languageCode: "en"
     };
 
-    if (type && type !== 'point_of_interest' && type !== 'all') {
-      data.includedTypes = [type];
-    }
+    // We're not including locationRestriction because it's causing 422 errors
+    console.log("Sending simplified nearby search request:", JSON.stringify(data));
 
     try {
       const response = await api.post(url, data, { headers });

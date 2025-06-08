@@ -9,43 +9,11 @@
   z-index: 1;
 }
 
-.header.map-page {
-  color: black;
-  top: 6px;
-  left: 25%;
-  top: 20px;
-  right: auto;
-  width: auto;
-}
-
-.header.map-page .btn {
-  color: black;
-  border-color: rgba(0, 0, 0, 0.3);
-}
-
-.header.map-page .btn:hover {
-  background: rgba(0, 0, 0, 0.1);
-  border-color: rgba(0, 0, 0, 0.5);
-}
-
-.header.map-page .header-content {
-  width: 600px;
-  margin: 0 auto;
-  padding: var(--space-4) 0;
-}
-
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: var(--space-4) var(--space-6);
-}
-
-.header.map-page .search-container {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .logo {

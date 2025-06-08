@@ -63,15 +63,23 @@ function AppRoutes() {
             <SchedulePage />
           </SessionGuard>
         } />
-        <Route element={<SessionGuard>
-          <MainLayout>
-            <Outlet />
-          </MainLayout>
-        </SessionGuard>}>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/map" element={<MapPage />} />
-          <Route path="/lists" element={<ArchivedListsPage />} />
-        </Route>
+        <Route path="/" element={
+          <SessionGuard>
+            <MainLayout>
+              <LandingPage />
+            </MainLayout>
+          </SessionGuard>
+        } />
+        <Route path="/map" element={
+          <SessionGuard>
+            <MapPage />
+          </SessionGuard>
+        } />
+        <Route path="/lists" element={
+          <SessionGuard>
+            <ArchivedListsPage />
+          </SessionGuard>
+        } />
       </Routes>
     </>
   );

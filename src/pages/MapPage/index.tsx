@@ -17,16 +17,29 @@ import React, { useState } from 'react';
 import PlacesMap from '../../components/PlacesMap';
 import ItineraryPanel from '../../components/ItineraryPanel';
 import NavbarColumn from '../../components/NavbarColumn';
+import { SearchBar } from '../../components/SearchBar';
+import { Place, Coordinates } from '../../types';
 import './index.css';
 
+// Utility for dispatching search results event
+function dispatchSearchResults(places: Place[]) {
+  window.dispatchEvent(new CustomEvent('search-places', { detail: places }));
+}
+
 const MapPage: React.FC = () => {
-  const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.0060 });
+  const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 40.7128, lng: -74.0060 });
   const [activeTab, setActiveTab] = useState<'saved' | 'search'>('search');
 
   return (
     <div className="map-page-content">
       <NavbarColumn />
       <div className="map-container-wrapper">
+        <div className="search-bar-container">
+          <SearchBar 
+            onSearchResults={dispatchSearchResults} 
+            mapCenter={mapCenter} 
+          />
+        </div>
         <PlacesMap mapCenter={mapCenter} setMapCenter={setMapCenter} activeTab={activeTab} setActiveTab={setActiveTab} />
         <ItineraryPanel activeTab={activeTab} setActiveTab={setActiveTab} />
       </div>
