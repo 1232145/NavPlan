@@ -15,7 +15,6 @@ import {
   Archive, 
   Trash2, 
   Plus, 
-  Map,
   CheckCircle,
   ArrowRight
 } from 'lucide-react';
@@ -142,7 +141,7 @@ const FavoritePlacesList: React.FC<{
       )}
       
       {favoritePlaces.length > 0 && (
-        <div className="places-header">
+        <>
           <div className="places-count">
             {favoritePlaces.length} place{favoritePlaces.length !== 1 ? 's' : ''} selected
             {favoritePlaces.length < 3 && (
@@ -165,7 +164,7 @@ const FavoritePlacesList: React.FC<{
               Archive
             </button>
           </div>
-        </div>
+        </>
       )}
 
       {/* Archive Modal */}
@@ -358,12 +357,6 @@ const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) 
   return (
     <div className="itinerary-panel expanded">
       <div className="panel-header">
-        <div className="panel-title">
-          <div className="panel-title-icon">
-            <Map size={18} />
-          </div>
-          <h2>Travel Planner</h2>
-        </div>
         
         <div className="panel-tabs" data-active-tab={activeTab}>
           <button

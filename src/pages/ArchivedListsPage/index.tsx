@@ -165,15 +165,11 @@ const ArchivedListsPage: React.FC = () => {
         <Dialog 
           open={scheduleOpen} 
           onClose={handleScheduleClose} 
-          maxWidth="xs" 
+          maxWidth="sm" 
           fullWidth
           aria-labelledby="schedule-dialog-title"
         >
           <DialogTitle id="schedule-dialog-title">
-            <div className="dialog-title-content">
-              <Map size={20} />
-              Generate Schedule
-            </div>
           </DialogTitle>
           <DialogContent>
             <div className="schedule-dialog-content">

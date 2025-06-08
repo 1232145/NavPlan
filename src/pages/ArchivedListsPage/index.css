@@ -532,12 +532,6 @@
 }
 
 /* Dialog enhancements */
-.dialog-title-content {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  color: var(--color-secondary-800);
-}
 
 .schedule-dialog-content {
   padding: var(--space-6);

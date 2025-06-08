@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { Search, X } from 'lucide-react';
 import './index.css';
 import { MapService } from '../../services/mapService';
@@ -81,10 +81,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearchResults, mapCenter
               <X size={16} />
             </button>
           )}
+          <Button type="submit" variant="primary" size="sm" disabled={logic.isSearching} className="search-button">
+            {logic.isSearching ? <span className="search-spinner" /> : 'Search'}
+          </Button>
         </div>
-        <Button type="submit" variant="primary" size="md" disabled={logic.isSearching}>
-          {logic.isSearching ? <span className="search-spinner" /> : 'Search'}
-        </Button>
       </form>
     </div>
   );

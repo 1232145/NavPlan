@@ -27,8 +27,8 @@
 
 .search-bar-container {
   position: absolute;
-  top: var(--space-5);
-  left: 35%;
+  top: var(--space-12);
+  left: 32%;
   transform: translateX(-50%);
   width: 600px;
   z-index: 10;
@@ -40,12 +40,11 @@
   min-height: 0;
   border-radius: var(--radius-2xl);
   width: 67%;
-  top: 9%;
-  height: 91%;
+  top: var(--space-6);
+  height: calc(100% - (var(--space-4) + 0.5rem) );
   position: relative;
   background: var(--color-surface);
   border: 1px solid var(--color-border-light);
-  box-shadow: var(--shadow-xl);
   overflow: hidden;
   backdrop-filter: var(--glass-backdrop);
 }
@@ -57,7 +56,7 @@
   border-radius: var(--radius-2xl);
   position: absolute;
   right: var(--space-5);
-  top: var(--space-3);
+  top: var(--space-6);
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow);
