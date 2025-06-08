@@ -40,9 +40,8 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
   activeTab, 
   setActiveTab 
 }) => {
-  const { favoritePlaces, addFavoritePlace } = useAppContext();
+  const { favoritePlaces, addFavoritePlace, searchResults } = useAppContext();
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [nearbyPlaces, setNearbyPlaces] = useState<Place[]>([]);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const markerClickedRef = useRef(false);
 
@@ -56,16 +55,13 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
     map.fitBounds(bounds);
   };
 
-  // Listen for search results from SearchBar
+  // Listen for search results from SearchBar to fit map bounds
   useEffect(() => {
     const handleSearchResults = (e: Event) => {
       const customEvent = e as CustomEvent;
       const places = Array.isArray(customEvent.detail) ? customEvent.detail : [];
-      setNearbyPlaces(places);
-      if (map) {
-        if (places.length > 0) {
-          fitMapToPlaces(places);
-        }
+      if (map && places.length > 0) {
+        fitMapToPlaces(places);
       }
     };
     window.addEventListener('search-places', handleSearchResults);
@@ -81,23 +77,28 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
     }
   };
 
+  const handleTabChange = (e: Event) => {
+    const customEvent = e as CustomEvent;
+    setActiveTab(customEvent.detail);
+    if (customEvent.detail === 'saved') {
+      if (favoritePlaces.length > 0 && map) {
+        fitMapToPlaces(favoritePlaces);
+      }
+    } else if (customEvent.detail === 'search') {
+      if (searchResults.length > 0 && map) {
+        fitMapToPlaces(searchResults);
+      }
+    }
+  };
+
+
   // Listen for tab changes from ItineraryPanel
   useEffect(() => {
-    const handleTabChange = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      setActiveTab(customEvent.detail);
-      if (customEvent.detail === 'saved') {
-        setNearbyPlaces([]);
-        if (favoritePlaces.length > 0 && map) {
-          fitMapToPlaces(favoritePlaces);
-        }
-      }
-    };
     window.addEventListener('itinerary-tab-changed', handleTabChange);
     return () => {
       window.removeEventListener('itinerary-tab-changed', handleTabChange);
     };
-  }, [favoritePlaces, map, setActiveTab]);
+  }, [favoritePlaces, map, setActiveTab, searchResults]);
 
   // Map click handler
   const handleMapClick = useCallback(() => {
@@ -133,7 +134,6 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
       onClick={handleMapClick}
       className="places-map"
     >
-      {/* Render favorite place markers */}
       {activeTab === 'saved' && favoritePlaces.map(place => (
         <MapMarker
           key={`fav-${place.id}`}
@@ -143,8 +143,7 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
         />
       ))}
 
-      {/* Render search result markers */}
-      {activeTab === 'search' && nearbyPlaces.map(place => (
+      {activeTab === 'search' && searchResults.map(place => (
         <MapMarker
           key={`search-${place.id}`}
           place={place}

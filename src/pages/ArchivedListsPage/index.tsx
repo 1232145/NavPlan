@@ -254,47 +254,70 @@ const ArchivedListsPage: React.FC = () => {
               
               return (
                 <div key={list.id} className={`archived-list-card ${expanded.includes(list.id) ? 'expanded' : ''}`}>
-                  <div 
-                    className="archived-list-header" 
-                    onClick={() => {
-                      if (expanded.includes(list.id)) {
-                        setExpanded(expanded.filter(id => id !== list.id));
-                      } else {
-                        setExpanded([...expanded, list.id]);
-                      }
-                    }}
-                  >
-                    <div className="archived-list-icon">
-                      <Map size={20} />
-                    </div>
-                    <div className="archived-list-info">
-                      <div className="archived-list-name-row">
-                        <h3 className="archived-list-name">{list.name}</h3>
-                        <div className="archived-list-badge">
-                          {list.places.length} {list.places.length === 1 ? 'place' : 'places'}
-                        </div>
-                      </div>
-                      <div className="archived-list-details">
-                        <span className="archived-list-date">
-                          <Calendar size={14} />
-                          {formatDate(list.date)}
-                        </span>
-                        
-                        <div className="archived-list-categories">
-                          {Object.entries(categoryCounts).map(([category, count]) => (
-                            <span key={category} className={`category-badge category-${category}`}>
-                              {category}: {count}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <button 
-                      className="archived-expand-button"
-                      aria-label={expanded.includes(list.id) ? "Collapse" : "Expand"}
+                  <div className="archived-list-header">
+                    <div 
+                      className="archived-list-header-clickable"
+                      onClick={() => {
+                        if (expanded.includes(list.id)) {
+                          setExpanded(expanded.filter(id => id !== list.id));
+                        } else {
+                          setExpanded([...expanded, list.id]);
+                        }
+                      }}
                     >
-                      <span className="archived-expand-icon">{expanded.includes(list.id) ? '▼' : '▶'}</span>
-                    </button>
+                      <div className="archived-list-icon">
+                        <Map size={20} />
+                      </div>
+                      <div className="archived-list-info">
+                        <div className="archived-list-name-row">
+                          <h3 className="archived-list-name">{list.name}</h3>
+                          <div className="archived-list-badge">
+                            {list.places.length} {list.places.length === 1 ? 'place' : 'places'}
+                          </div>
+                        </div>
+                        <div className="archived-list-details">
+                          <span className="archived-list-date">
+                            <Calendar size={14} />
+                            {formatDate(list.date)}
+                          </span>
+                          
+                          <div className="archived-list-categories">
+                            {Object.entries(categoryCounts).map(([category, count]) => (
+                              <span key={category} className={`category-badge category-${category}`}>
+                                {category}: {count}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="archived-list-header-actions">
+                      <Button 
+                        variant="secondary" 
+                        size="sm" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGenerateSchedule(list);
+                        }}
+                        className="generate-button-header"
+                      >
+                        <Navigation size={16} />
+                        Generate Schedule
+                      </Button>
+                      <button 
+                        className="archived-expand-button"
+                        aria-label={expanded.includes(list.id) ? "Collapse" : "Expand"}
+                        onClick={() => {
+                          if (expanded.includes(list.id)) {
+                            setExpanded(expanded.filter(id => id !== list.id));
+                          } else {
+                            setExpanded([...expanded, list.id]);
+                          }
+                        }}
+                      >
+                        <span className="archived-expand-icon">{expanded.includes(list.id) ? '▼' : '▶'}</span>
+                      </button>
+                    </div>
                   </div>
                   
                   {expanded.includes(list.id) && (
@@ -306,17 +329,7 @@ const ArchivedListsPage: React.FC = () => {
                         </div>
                       )}
                       
-                      <div className="archived-list-actions">
-                        <Button 
-                          variant="secondary" 
-                          size="md" 
-                          onClick={() => handleGenerateSchedule(list)}
-                          className="generate-button"
-                        >
-                          <Navigation size={16} />
-                          Generate Schedule
-                        </Button>
-                      </div>
+
                       
                       {list.places.length === 0 ? (
                         <div className="archived-list-empty">No places in this list.</div>

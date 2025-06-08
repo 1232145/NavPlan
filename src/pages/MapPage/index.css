@@ -4,59 +4,156 @@
   min-height: 0;
   min-width: 0;
   width: 100%;
-  height: 100vh; /* Let map-page-content also take full screen height */
-  margin-top: 0; /* Removed original margin-top */
-  padding-bottom: 0; /* Removed original padding-bottom */
-  gap: 20px;
+  height: 100vh;
+  margin-top: 0;
+  padding-bottom: 0;
+  gap: var(--space-3);
+  background: transparent;
 }
 
 /* Navbar column styles have been moved to src/components/NavbarColumn/index.css */
 
-.map-container-wrapper { /* New wrapper for map and itinerary panel */
+.map-container-wrapper {
   flex: 1;
   display: flex;
-  flex-direction: column; /* Stack map and itinerary if needed or adjust layout */
+  flex-direction: column;
   min-width: 0;
-  position: relative; /* For absolute positioning of itinerary panel if needed */
-  height: 100vh; /* Take full viewport height */
-  padding-right: 20px; /* Original gap */
-  padding-bottom: 20px; /* Original gap */
+  position: relative;
+  height: 100vh;
+  padding-right: var(--space-3);
+  padding-bottom: var(--space-5);
+  overflow: hidden;
 }
 
 .search-bar-container {
   position: absolute;
-  top: 20px;
+  top: var(--space-5);
   left: 35%;
   transform: translateX(-50%);
   width: 600px;
   z-index: 10;
+  backdrop-filter: var(--glass-backdrop);
 }
 
 .map-container {
   min-width: 0;
   min-height: 0;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   width: 67%;
   top: 9%;
-  height: 91%; /* Map should fill its container */
-  position: relative; /* To ensure it stacks correctly with itinerary panel */
+  height: 91%;
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  backdrop-filter: var(--glass-backdrop);
 }
 
 .itinerary-panel {
-  min-width: 320px;
-  max-width: 400px;
-  height: calc(100% - (var(--space-4) + 0.5rem) - 20px); /* Fill available height within map-container-wrapper, accounting for padding */
-  border-radius: 20px;
+  min-width: 20%;
+  max-width: 31%;
+  height: calc(100% - (var(--space-4) + 0.5rem) - var(--space-5));
+  border-radius: var(--radius-2xl);
   position: absolute;
-  right: 20px; /* Align to the right of map-container-wrapper */
-  top: 12px; /* Align with top padding of wrapper */
-  background-color: white; /* Ensure it has a background */
+  right: var(--space-5);
+  top: var(--space-3);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  transition: var(--transition-normal);
+}
+
+.itinerary-panel:hover {
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Enhanced Search Bar Styling */
+.search-bar-container .search-bar {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  transition: var(--transition-normal);
+}
+
+.search-bar-container .search-bar:focus-within {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-primary-300);
+  box-shadow: 
+    var(--shadow-lg),
+    0 0 0 3px rgba(14, 165, 233, 0.1);
 }
 
 /* Responsive styles for search bar */
+@media (max-width: 1024px) {
+  .map-page-content {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  
+  .map-container-wrapper {
+    padding-right: var(--space-4);
+    padding-bottom: var(--space-4);
+  }
+  
+  .search-bar-container {
+    width: 85%;
+    max-width: 500px;
+    left: 50%;
+  }
+  
+  .map-container {
+    width: 100%;
+    top: 15%;
+    height: 85%;
+  }
+  
+  .itinerary-panel {
+    position: relative;
+    right: auto;
+    top: auto;
+    width: 100%;
+    max-width: none;
+    height: 300px;
+    margin-top: var(--space-4);
+  }
+}
+
 @media (max-width: 768px) {
   .search-bar-container {
     width: 90%;
-    max-width: 500px;
+    max-width: 400px;
+    top: var(--space-4);
+  }
+  
+  .map-container {
+    border-radius: var(--radius-xl);
+    top: 12%;
+    height: 88%;
+  }
+  
+  .itinerary-panel {
+    border-radius: var(--radius-xl);
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .map-page-content {
+    gap: var(--space-3);
+  }
+  
+  .map-container-wrapper {
+    padding-right: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+  
+  .search-bar-container {
+    width: 95%;
+    top: var(--space-3);
   }
 } 

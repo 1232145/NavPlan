@@ -13,12 +13,13 @@
  * a complete interface for place discovery and itinerary building.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PlacesMap from '../../components/PlacesMap';
 import ItineraryPanel from '../../components/ItineraryPanel';
 import NavbarColumn from '../../components/NavbarColumn';
 import { SearchBar } from '../../components/SearchBar';
 import { Place, Coordinates } from '../../types';
+import { useAppContext } from '../../context/AppContext';
 import './index.css';
 
 // Utility for dispatching search results event
@@ -27,8 +28,15 @@ function dispatchSearchResults(places: Place[]) {
 }
 
 const MapPage: React.FC = () => {
+  const { setSearchResults } = useAppContext();
   const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 40.7128, lng: -74.0060 });
   const [activeTab, setActiveTab] = useState<'saved' | 'search'>('search');
+
+  useEffect(() => {
+    return () => {
+      setSearchResults([]);
+    };
+  }, [setSearchResults]);
 
   return (
     <div className="map-page-content">

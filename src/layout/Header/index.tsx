@@ -44,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({ onMyListsClick, onLogoClick }) => {
             Go to Map
           </Button>
           <Button variant="primary" size="md" onClick={onMyListsClick}>
-            My Lists
+            Generate Schedule
           </Button>
           <Button variant="primary" size="md" onClick={handleSignOut}>
             Sign Out

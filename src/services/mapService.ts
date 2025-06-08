@@ -85,7 +85,6 @@ export const MapService = {
     const cached = searchResultsCache.get(cacheKey);
     
     if (cached && (Date.now() - cached.timestamp < SEARCH_CACHE_TTL)) {
-      console.log(`Using cached search results for: ${query}`);
       return cached.places;
     }
 
@@ -100,9 +99,6 @@ export const MapService = {
       languageCode: "en"
     };
 
-    // We're not including locationRestriction because it's causing 422 errors
-    console.log("Sending simplified search request:", JSON.stringify(data));
-
     try {
       const response = await api.post(url, data, { headers });
       
@@ -114,7 +110,6 @@ export const MapService = {
           places: mappedPlaces, 
           timestamp: Date.now() 
         });
-        console.log(`Cached search results for: ${query}`);
         
         return mappedPlaces;
       }
@@ -131,7 +126,6 @@ export const MapService = {
     const cached = searchResultsCache.get(cacheKey);
     
     if (cached && (Date.now() - cached.timestamp < SEARCH_CACHE_TTL)) {
-      console.log(`Using cached nearby results for: ${JSON.stringify(center)}, radius: ${radius}, type: ${type || 'all'}`);
       return cached.places;
     }
 
@@ -146,9 +140,6 @@ export const MapService = {
       languageCode: "en"
     };
 
-    // We're not including locationRestriction because it's causing 422 errors
-    console.log("Sending simplified nearby search request:", JSON.stringify(data));
-
     try {
       const response = await api.post(url, data, { headers });
       if (response.data && response.data.places) {
@@ -159,7 +150,6 @@ export const MapService = {
           places: mappedPlaces, 
           timestamp: Date.now() 
         });
-        console.log(`Cached nearby results for: ${JSON.stringify(center)}, radius: ${radius}, type: ${type || 'all'}`);
         
         return mappedPlaces;
       }
@@ -174,7 +164,6 @@ export const MapService = {
     // Check cache first
     const cached = placeDetailsCache.get(placeId);
     if (cached && (Date.now() - cached.timestamp < PLACE_DETAILS_CACHE_TTL)) {
-      console.log(`Using cached place details for: ${placeId}`);
       return cached.place;
     }
 
@@ -193,7 +182,6 @@ export const MapService = {
           place: mappedPlace,
           timestamp: Date.now()
         });
-        console.log(`Cached place details for: ${placeId}`);
         
         return mappedPlace;
       }
@@ -212,7 +200,6 @@ export const MapService = {
   clearAllCaches(): void {
     searchResultsCache.clear();
     placeDetailsCache.clear();
-    console.log("All map caches cleared");
   },
   
   /**
@@ -220,7 +207,6 @@ export const MapService = {
    */
   clearSearchCache(): void {
     searchResultsCache.clear();
-    console.log("Search results cache cleared");
   },
   
   /**
@@ -228,6 +214,5 @@ export const MapService = {
    */
   clearPlaceDetailsCache(): void {
     placeDetailsCache.clear();
-    console.log("Place details cache cleared");
   }
 };

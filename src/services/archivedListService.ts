@@ -24,7 +24,6 @@ export const archivedListService = {
   async getLists(): Promise<ArchivedList[]> {
     // Check if we have valid cached data
     if (listsCache.data && (Date.now() - listsCache.timestamp < CACHE_TTL)) {
-      console.log('Using cached archived lists');
       return listsCache.data;
     }
 
@@ -33,7 +32,6 @@ export const archivedListService = {
     // Update cache
     listsCache.data = response.data;
     listsCache.timestamp = Date.now();
-    console.log('Cached new archived lists data');
     return response.data;
   },
 

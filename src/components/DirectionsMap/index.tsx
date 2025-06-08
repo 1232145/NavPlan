@@ -91,7 +91,6 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
   // Create bounds for all locations to fit the map
   const fitBounds = useCallback(() => {
     if (!map || !schedule || schedule.items.length === 0) {
-      console.log("Cannot fit bounds - missing map or schedule data");
       return;
     }
 
@@ -143,7 +142,6 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
           }
         }, 300);
       } else {
-        console.log("No valid points found to fit bounds, setting default zoom");
         map.setCenter(mapCenter);
         map.setZoom(12);
       }
@@ -203,7 +201,6 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
             typeof currentItem.travel_to_next.start_location.lng !== 'number' ||
             typeof nextItem.travel_to_next.start_location.lat !== 'number' || 
             typeof nextItem.travel_to_next.start_location.lng !== 'number') {
-          console.log(`Missing or invalid travel data for segment ${i} to ${i+1}`);
           continue;
         }
 

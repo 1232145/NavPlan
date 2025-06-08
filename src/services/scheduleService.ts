@@ -58,11 +58,8 @@ export const scheduleService = {
     if (isUpdateRequest) {
       const cached = schedulesCache.get(cacheKey);
       if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
-        console.log(`Using cached schedule for: ${cacheKey}`);
         return cached.schedule;
       }
-    } else {
-      console.log("Generating a new schedule, bypassing cache read");
     }
     
     const response = await api.post('/schedules', {
@@ -93,7 +90,6 @@ export const scheduleService = {
       schedule, 
       timestamp: Date.now() 
     });
-    console.log(`Cached schedule for: ${effectiveCacheKey}`);
     
     return schedule;
   },
@@ -106,6 +102,5 @@ export const scheduleService = {
    */
   clearCache(): void {
     schedulesCache.clear();
-    console.log("Schedule cache cleared");
   }
 }; 

@@ -9,8 +9,16 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
-import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
+import { 
+  Search, 
+  Heart, 
+  Archive, 
+  Trash2, 
+  Plus, 
+  Map,
+  CheckCircle,
+  ArrowRight
+} from 'lucide-react';
 
 export interface TabControlProps {
   activeTab: 'saved' | 'search';
@@ -70,7 +78,13 @@ function useItineraryPanelLogic(activeTab: 'saved' | 'search', setActiveTab: (ta
   return { favoritePlaces, removeFavoritePlace, addFavoritePlace, searchResults, handleTabChange, selectedPlace, clearAllFavorites, archiveFavorites };
 }
 
-const FavoritePlacesList: React.FC<{ favoritePlaces: Place[]; removeFavoritePlace: (id: string) => void; selectedPlace: Place | null; clearAllFavorites: () => void; archiveFavorites: (name?: string, note?: string) => void; }> = ({ favoritePlaces, removeFavoritePlace, selectedPlace, clearAllFavorites, archiveFavorites }) => {
+const FavoritePlacesList: React.FC<{ 
+  favoritePlaces: Place[]; 
+  removeFavoritePlace: (id: string) => void; 
+  selectedPlace: Place | null; 
+  clearAllFavorites: () => void; 
+  archiveFavorites: (name?: string, note?: string) => void; 
+}> = ({ favoritePlaces, removeFavoritePlace, selectedPlace, clearAllFavorites, archiveFavorites }) => {
   let results = favoritePlaces;
   let selected = null;
   if (selectedPlace && favoritePlaces.some(p => p.id === selectedPlace.id)) {
@@ -82,6 +96,7 @@ const FavoritePlacesList: React.FC<{ favoritePlaces: Place[]; removeFavoritePlac
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [archiveName, setArchiveName] = useState('');
   const [archiveNote, setArchiveNote] = useState('');
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
   const handleArchive = () => {
     setArchiveOpen(true);
@@ -93,32 +108,74 @@ const FavoritePlacesList: React.FC<{ favoritePlaces: Place[]; removeFavoritePlac
     setArchiveNote('');
   };
 
-  const handleArchiveConfirm = () => {
-    archiveFavorites(archiveName.trim() || undefined, archiveNote.trim() || undefined);
-    setArchiveOpen(false);
-    setArchiveName('');
-    setArchiveNote('');
+  const handleArchiveConfirm = async () => {
+    try {
+      await archiveFavorites(archiveName.trim() || undefined, archiveNote.trim() || undefined);
+      setArchiveOpen(false);
+      setArchiveName('');
+      setArchiveNote('');
+      setShowSuccessMessage(true);
+      
+      // Hide success message after 5 seconds
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+      }, 5000);
+    } catch (error) {
+      console.error('Failed to archive favorites:', error);
+    }
   };
 
   return (
     <div className="places-list">
+      {/* Success Message */}
+      {showSuccessMessage && (
+        <div className="archive-success-message">
+          <div className="success-content">
+            <CheckCircle size={20} color="var(--color-success-600)" />
+            <div className="success-text">
+              <strong>List archived successfully!</strong>
+              <p>Go to <strong>Generate Schedule</strong> to create your itinerary from archived lists.</p>
+            </div>
+            <ArrowRight size={16} color="var(--color-success-600)" />
+          </div>
+        </div>
+      )}
+      
       {favoritePlaces.length > 0 && (
-        <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-          <Button variant="default" size="sm" onClick={clearAllFavorites}>Clear All</Button>
-          <Button 
-            variant="primary" 
-            size="sm" 
-            onClick={handleArchive}
-            disabled={favoritePlaces.length < 3}
-          >
-            Archive This
-          </Button>
+        <div className="places-header">
+          <div className="places-count">
+            {favoritePlaces.length} place{favoritePlaces.length !== 1 ? 's' : ''} selected
+            {favoritePlaces.length < 3 && (
+              <span style={{ color: 'var(--color-secondary-500)', marginLeft: 8, fontSize: '0.75rem' }}>
+                (Need 3+ for archive)
+              </span>
+            )}
+          </div>
+          <div className="places-actions">
+            <button className="action-button secondary" onClick={clearAllFavorites}>
+              <Trash2 size={16} />
+              Clear
+            </button>
+            <button 
+              className="action-button"
+              onClick={handleArchive}
+              disabled={favoritePlaces.length < 3}
+            >
+              <Archive size={16} />
+              Archive
+            </button>
+          </div>
         </div>
       )}
 
       {/* Archive Modal */}
       <Dialog open={archiveOpen} onClose={handleArchiveClose} maxWidth="xs" fullWidth>
-        <DialogTitle>Archive List</DialogTitle>
+        <DialogTitle>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Archive size={24} color="var(--color-primary-600)" />
+            Archive List
+          </div>
+        </DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -148,34 +205,34 @@ const FavoritePlacesList: React.FC<{ favoritePlaces: Place[]; removeFavoritePlac
       </Dialog>
 
       {selected && (
-        <div style={{ marginBottom: 12, background: '#f0f6ff', padding: '10px 10px 1px 10px' }}>
+        <div className="selected-place">
+          <div className="selected-badge">Selected</div>
           <PlaceCard place={selected} onRemoveFavorite={() => removeFavoritePlace(selected.id)} />
         </div>
       )}
+      
       {favoritePlaces.length === 0 && !selected ? (
         <div className="empty-state">
-          <p>Search and add places to build your perfect day</p>
+          <div className="empty-state-icon">
+            <Heart size={28} />
+          </div>
+          <h3>No Saved Places</h3>
+          <p>Search and add places to build your perfect day. Start exploring to create your custom itinerary!</p>
         </div>
       ) : (
-        <>
-          <p className="places-count">
-            {favoritePlaces.length} place{favoritePlaces.length !== 1 ? 's' : ''} selected
-            {favoritePlaces.length < 3 && (
-              <span style={{ color: 'var(--color-neutral-600)', marginLeft: 8, fontSize: '0.8rem' }}>
-                (Need at least 3 places to archive)
-              </span>
-            )}
-          </p>
-          {results.map(place => (
-            <PlaceCard key={place.id} place={place} onRemoveFavorite={() => removeFavoritePlace(place.id)} />
-          ))}
-        </>
+        results.map(place => (
+          <PlaceCard key={place.id} place={place} onRemoveFavorite={() => removeFavoritePlace(place.id)} />
+        ))
       )}
     </div>
   );
 };
 
-const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place | null; addFavoritePlace: (place: Place) => void }> = ({ searchResults, selectedPlace, addFavoritePlace }) => {
+const SearchResultsList: React.FC<{ 
+  searchResults: Place[]; 
+  selectedPlace: Place | null; 
+  addFavoritePlace: (place: Place) => void 
+}> = ({ searchResults, selectedPlace, addFavoritePlace }) => {
   const { favoritePlaces } = useAppContext();
   let results = searchResults;
   let selected = null;
@@ -183,7 +240,8 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
     selected = selectedPlace;
     results = searchResults.filter(p => p.id !== selectedPlace.id);
   }
-  // --- Note Modal State ---
+  
+  // Note Modal State
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [pendingPlace, setPendingPlace] = useState<Place | null>(null);
   const [note, setNote] = useState('');
@@ -197,6 +255,7 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
       addFavoritePlace(place);
     }
   };
+  
   const handleNoteConfirm = () => {
     if (pendingPlace) {
       addFavoritePlace({ ...pendingPlace, note: note.trim() || undefined });
@@ -205,6 +264,7 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
       setShowNoteModal(false);
     }
   };
+  
   const handleNoteCancel = () => {
     setPendingPlace(null);
     setNote('');
@@ -214,14 +274,32 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
   return (
     <div className="places-list">
       {searchResults.length > 0 && (
-        <FormControlLabel
-          control={<Checkbox checked={dontAskForNote} onChange={e => setDontAskForNote(e.target.checked)} />}
-          label="Don't ask for a note when saving to favorites."
-          sx={{ mb: 2 }}
-        />
+        <>
+          <div className="places-count">
+            {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+          </div>
+          
+          <div className="settings-section">
+            <div className="settings-item">
+              <input 
+                type="checkbox" 
+                className="settings-checkbox"
+                checked={dontAskForNote} 
+                onChange={e => setDontAskForNote(e.target.checked)} 
+              />
+              <span>Skip note when saving places</span>
+            </div>
+          </div>
+        </>
       )}
+      
       <Dialog open={showNoteModal} onClose={handleNoteCancel} maxWidth="xs" fullWidth>
-        <DialogTitle>Add a Note (Optional)</DialogTitle>
+        <DialogTitle>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Plus size={24} color="var(--color-primary-600)" />
+            Add a Note (Optional)
+          </div>
+        </DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -240,8 +318,10 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
           <Button variant="primary" size="sm" onClick={handleNoteConfirm}>Save</Button>
         </DialogActions>
       </Dialog>
+      
       {selected && (
-        <div style={{ marginBottom: 12, background: '#f0f6ff', padding: '10px 10px 1px 10px' }}>
+        <div className="selected-place">
+          <div className="selected-badge">Selected</div>
           <PlaceCard 
             place={selected} 
             onAddToFavorites={handleAddToFavorites}
@@ -249,24 +329,24 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
           />
         </div>
       )}
+      
       {searchResults.length === 0 && !selected ? (
         <div className="empty-state">
-          <p>No search results yet. Try searching for a place!</p>
+          <div className="empty-state-icon">
+            <Search size={28} />
+          </div>
+          <h3>Start Exploring</h3>
+          <p>Use the search bar above to discover amazing places for your next adventure. We'll show you the best matches here!</p>
         </div>
       ) : (
-        <>
-          <p className="places-count">
-            {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
-          </p>
-          {results.map(place => (
-            <PlaceCard 
-              key={place.id} 
-              place={place} 
-              onAddToFavorites={handleAddToFavorites}
-              isSaved={favoritePlaces.some(p => p.id === place.id)}
-            />
-          ))}
-        </>
+        results.map(place => (
+          <PlaceCard 
+            key={place.id} 
+            place={place} 
+            onAddToFavorites={handleAddToFavorites}
+            isSaved={favoritePlaces.some(p => p.id === place.id)}
+          />
+        ))
       )}
     </div>
   );
@@ -274,32 +354,51 @@ const SearchResultsList: React.FC<{ searchResults: Place[]; selectedPlace: Place
 
 const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) => {
   const { favoritePlaces, removeFavoritePlace, addFavoritePlace, searchResults, handleTabChange, selectedPlace, clearAllFavorites, archiveFavorites } = useItineraryPanelLogic(activeTab, setActiveTab);
+  
   return (
     <div className="itinerary-panel expanded">
-      <div className="panel-tabs">
-        <>
-          <Button
-            variant={activeTab === 'search' ? 'primary' : 'default'}
-            size="md"
-            style={{ borderRadius: '12px', marginRight: 2 }}
+      <div className="panel-header">
+        <div className="panel-title">
+          <div className="panel-title-icon">
+            <Map size={18} />
+          </div>
+          <h2>Travel Planner</h2>
+        </div>
+        
+        <div className="panel-tabs" data-active-tab={activeTab}>
+          <button
+            className={`tab-button ${activeTab === 'search' ? 'active' : ''}`}
             onClick={() => handleTabChange('search')}
           >
-            Search Results
-          </Button>
-          <Button
-            variant={activeTab === 'saved' ? 'primary' : 'default'}
-            size="md"
-            style={{ borderRadius: '12px' }}
+            <Search size={16} />
+            <span>Search</span>
+          </button>
+          <button
+            className={`tab-button ${activeTab === 'saved' ? 'active' : ''}`}
             onClick={() => handleTabChange('saved')}
           >
-            Saved Places
-          </Button>
-        </>
+            <Heart size={16} />
+            <span>Saved</span>
+          </button>
+        </div>
       </div>
-      {activeTab === 'saved'
-        ? <FavoritePlacesList favoritePlaces={favoritePlaces} removeFavoritePlace={removeFavoritePlace} selectedPlace={selectedPlace} clearAllFavorites={clearAllFavorites} archiveFavorites={archiveFavorites} />
-        : <SearchResultsList searchResults={searchResults} selectedPlace={selectedPlace} addFavoritePlace={addFavoritePlace} />
-      }
+      
+      <div className="panel-content">
+        {activeTab === 'saved'
+          ? <FavoritePlacesList 
+              favoritePlaces={favoritePlaces} 
+              removeFavoritePlace={removeFavoritePlace} 
+              selectedPlace={selectedPlace} 
+              clearAllFavorites={clearAllFavorites} 
+              archiveFavorites={archiveFavorites} 
+            />
+          : <SearchResultsList 
+              searchResults={searchResults} 
+              selectedPlace={selectedPlace} 
+              addFavoritePlace={addFavoritePlace} 
+            />
+        }
+      </div>
     </div>
   );
 };
