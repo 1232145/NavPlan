@@ -30,10 +30,10 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, o
             x: (rect.left + rect.width / 2) / window.innerWidth,
             y: (rect.top + rect.height / 2) / window.innerHeight,
           },
-          zIndex: 9999,
+          zIndex: 100,
         });
       } else {
-        confetti({ particleCount: 80, spread: 70, zIndex: 9999 });
+        confetti({ particleCount: 80, spread: 70, zIndex: 100 });
       }
     }
   };
@@ -62,7 +62,7 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, o
         <p>{place.address}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 6 }}>
           {place.rating && (
-            <span className="rating">★ {place.rating}{place.userRatingCount ? ` (${place.userRatingCount})` : ''}</span>
+            <span className="place-card-rating">★ {place.rating}{place.userRatingCount ? ` (${place.userRatingCount})` : ''}</span>
           )}
           {typeof place.priceLevel === 'number' && (
             <span style={{ fontSize: 13, color: '#555' }}>Price: {'$'.repeat(place.priceLevel)}</span>

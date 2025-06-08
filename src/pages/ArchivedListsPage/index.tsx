@@ -10,6 +10,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
+import LoadingScreen from '../../components/LoadingScreen';
 
 const ArchivedListsPage: React.FC = () => {
   const { generateSchedule } = useAppContext();
@@ -82,15 +83,9 @@ const ArchivedListsPage: React.FC = () => {
     }, 50);
   };
 
+  // Show loading screen for initial list loading
   if (loading) {
-    return (
-      <div className="archived-lists-page">
-        <Button variant="primary" size="md" onClick={onBack} style={{ marginBottom: 24 }}>
-          Back to Map
-        </Button>
-        <div className="loading-state">Loading archived lists...</div>
-      </div>
-    );
+    return <LoadingScreen message="Loading your saved lists" />;
   }
 
   if (error) {

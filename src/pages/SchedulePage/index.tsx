@@ -36,11 +36,10 @@ const TRAVEL_MODES = [
 ];
 
 const SchedulePage: React.FC = () => {
-  const { currentSchedule, favoritePlaces, generateSchedule, isLoading: isAppContextLoading } = useAppContext();
+  const { currentSchedule, favoritePlaces, generateSchedule } = useAppContext();
   const navigate = useNavigate();
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [travelMode, setTravelMode] = useState("walking");
-  const [isUpdatingTravelMode, setIsUpdatingTravelMode] = useState(false);
 
   // Set initial map center based on first place
   useEffect(() => {
@@ -67,7 +66,6 @@ const SchedulePage: React.FC = () => {
     if (newMode === travelMode || !currentSchedule || currentSchedule.items.length === 0) return;
     
     try {
-      setIsUpdatingTravelMode(true);
       const startTime = currentSchedule.items[0]?.start_time || "09:00";
       const placesForUpdate = currentSchedule.items.map(item => ({
         id: item.place_id,
@@ -88,13 +86,11 @@ const SchedulePage: React.FC = () => {
       setTravelMode(newMode);
     } catch (error) {
       console.error("Failed to update schedule with new travel mode:", error);
-    } finally {
-      setIsUpdatingTravelMode(false);
     }
   };
 
   if (!currentSchedule) {
-    return <div className="schedule-loading">{isAppContextLoading ? 'Generating your initial schedule...' : 'Loading your schedule...'}</div>;
+    return null;
   }
 
   return (
@@ -128,21 +124,19 @@ const SchedulePage: React.FC = () => {
                     className={`travel-mode-option ${travelMode === mode.value ? 'active' : ''}`}
                     onClick={() => handleTravelModeChange(mode.value)}
                     title={mode.label}
-                    disabled={isUpdatingTravelMode || isAppContextLoading}
                   >
                     <span className="travel-mode-icon">{mode.icon}</span>
                     <span className="travel-mode-text">{mode.label}</span>
                   </button>
                 ))}
               </div>
-              {(isUpdatingTravelMode || isAppContextLoading) && <div className="loading-indicator">Updating schedule...</div>}
             </div>
-              <DirectionsMap
-                schedule={currentSchedule}
-                places={favoritePlaces}
-                initialCenter={mapCenter}
-                travelMode={travelMode}
-              />
+            <DirectionsMap
+              schedule={currentSchedule}
+              places={favoritePlaces}
+              initialCenter={mapCenter}
+              travelMode={travelMode}
+            />
           </div>
           <ScheduleTimelinePanel travelMode={travelMode} />
         </div>

@@ -48,8 +48,8 @@ const containerStyle = {
 };
 
 const MapLoading: React.FC = () => (
-  <div className="map-loading">
-    <div className="loading-spinner"></div>
+  <div className="map-component-loading">
+    <div className="map-loading-spinner"></div>
     <p>Loading map...</p>
   </div>
 );

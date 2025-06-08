@@ -3,6 +3,7 @@ import { Place, Schedule } from '../types';
 import api from '../services/api/axios';
 import { archivedListService } from '../services/archivedListService';
 import { scheduleService } from '../services/scheduleService';
+import LoadingScreen from '../components/LoadingScreen';
 
 interface AppContextType {
   favoritePlaces: Place[];
@@ -28,6 +29,7 @@ interface AppContextType {
   setUser: React.Dispatch<React.SetStateAction<any>>;
   checkSession: () => Promise<boolean>;
   isLoading: boolean;
+  loadingMessage: string;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -43,6 +45,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
   useEffect(() => {
     const initSessionCheck = async () => {
@@ -112,6 +115,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const placesToUse = places || favoritePlaces;
     
     setIsLoading(true);
+    
+    // Set appropriate loading message based on context
+    const isUpdate = !!dayOverviewForUpdate;
+    if (isUpdate) {
+      setLoadingMessage(`Updating your route to ${travelMode} mode`);
+    } else if (placesToUse.length > 7) {
+      setLoadingMessage(`Crafting your perfect day from ${placesToUse.length} places`);
+    } else {
+      setLoadingMessage('Creating your perfect day itinerary');
+    }
+    
     try {
       if (favoritePlaces.length > 5) {
         console.log(`You have ${favoritePlaces.length} favorite places saved. The AI will select an optimal subset for your day itinerary.`);
@@ -134,8 +148,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Potentially show a user-facing error message
     } finally {
       setIsLoading(false);
+      setLoadingMessage('');
     }
   }, [favoritePlaces, setIsLoading, setCurrentSchedule]);
+
+  // Show loading screen when app is loading
+  if (isLoading) {
+    return <LoadingScreen message={loadingMessage} />;
+  }
 
   return (
     <AppContext.Provider value={{
@@ -154,6 +174,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setUser,
       checkSession,
       isLoading,
+      loadingMessage,
     }}>
       {children}
     </AppContext.Provider>

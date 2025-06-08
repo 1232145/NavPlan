@@ -57,7 +57,7 @@ html {
 
 /* Map container styles */
 
-.map-loading, .schedule-loading {
+.schedule-map-loading, .schedule-loading-indicator {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -67,24 +67,24 @@ html {
   position: relative;
 }
 
-.map-loading:after, .schedule-loading:after {
+.schedule-map-loading:after, .schedule-loading-indicator:after {
   content: '';
   width: 30px;
   height: 30px;
   border: 3px solid #f3f3f3;
   border-top: 3px solid #3498db;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: scheduleSpin 1s linear infinite;
   position: absolute;
   top: calc(50% - 15px);
   left: calc(50% - 15px);
 }
 
-.schedule-loading {
+.schedule-loading-indicator {
   height: 300px;
 }
 
-@keyframes spin {
+@keyframes scheduleSpin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
@@ -205,27 +205,6 @@ html {
   margin-right: 1rem;
   color: var(--text-secondary);
   margin-bottom: 8px;
-}
-
-.loading-indicator {
-  margin-top: 8px;
-  margin-left: 1rem;
-  color: #4285F4;
-  font-size: 0.9rem;
-  display: flex;
-  align-items: center;
-}
-
-.loading-indicator::before {
-  content: "";
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid #4285F4;
-  border-radius: 50%;
-  border-top-color: transparent;
-  margin-right: 0.5rem;
-  animation: spin 1s linear infinite;
 }
 
 /* AI Day Overview Styling */

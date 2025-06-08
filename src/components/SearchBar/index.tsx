@@ -68,7 +68,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({ onSearchResults, mapCenter
           )}
         </div>
         <Button type="submit" variant="primary" size="md" disabled={logic.isSearching}>
-          {logic.isSearching ? <span className="loading-spinner small" /> : 'Search'}
+          {logic.isSearching ? <span className="search-spinner" /> : 'Search'}
         </Button>
       </form>
     </div>

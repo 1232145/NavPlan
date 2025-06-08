@@ -33,6 +33,9 @@ export interface DirectionsMapProps {
 
 const DEFAULT_CENTER = { lat: 40.7128, lng: -74.0060 }; // New York as default
 
+// Custom marker colors for better visibility - must match the colors in ScheduleTimelinePanel
+const markerColors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#FF9800', '#9C27B0', '#795548'];
+
 const mapOptions = {
   styles: [
     {
@@ -68,20 +71,20 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
   travelMode = "walking"
 }) => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [directions, setDirections] = useState<google.maps.DirectionsResult | null>(null);
   const [mapCenter, setMapCenter] = useState<Coordinates>(initialCenter);
   const [mapError, setMapError] = useState<string | null>(null);
   const directionsAttempted = useRef(false);
-  const directionsRenderer = useRef<google.maps.DirectionsRenderer | null>(null);
+  const directionsRenderers = useRef<google.maps.DirectionsRenderer[]>([]);
 
   // Reset directions when travel mode changes or component mounts
   useEffect(() => {
-    // Clear existing directions renderer
-    if (directionsRenderer.current) {
-      directionsRenderer.current.setMap(null);
-      directionsRenderer.current = null;
-    }
-    setDirections(null);
+    // Clear existing directions renderers
+    directionsRenderers.current.forEach(renderer => {
+      if (renderer) {
+        renderer.setMap(null);
+      }
+    });
+    directionsRenderers.current = [];
     directionsAttempted.current = false;
   }, [travelMode]);
 
@@ -165,7 +168,7 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
     }, 500);
   }, [fitBounds]);
 
-  // Function to fetch directions
+  // Function to fetch directions for each route segment
   useEffect(() => {
     if (!map || !schedule || schedule.items.length < 2 || directionsAttempted.current) {
       return;
@@ -174,107 +177,128 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
     try {
       directionsAttempted.current = true;
 
-      // Clear any existing directions renderer
-      if (directionsRenderer.current) {
-        directionsRenderer.current.setMap(null);
-        directionsRenderer.current = null;
-      }
-
-      // Validate each place has valid coordinates before attempting to get directions
-      let allValid = true;
-      let validWaypoints = [];
-
-      for (let i = 0; i < schedule.items.length; i++) {
-        const item = schedule.items[i];
-
-        if (!item.travel_to_next ||
-          !item.travel_to_next.start_location ||
-          !item.travel_to_next.start_location.lat ||
-          !item.travel_to_next.start_location.lng ||
-          (item.travel_to_next.start_location.lat === 0 &&
-            item.travel_to_next.start_location.lng === 0)) {
-          console.log("Invalid place found:", item);
-          allValid = false;
-        } else if (i > 0 && i < schedule.items.length - 1) {
-          // Add as waypoint (skip first and last)
-          validWaypoints.push({
-            location: new window.google.maps.LatLng(
-              item.travel_to_next.start_location.lat,
-              item.travel_to_next.start_location.lng
-            ),
-            stopover: true
-          });
+      // Clear any existing directions renderers
+      directionsRenderers.current.forEach(renderer => {
+        if (renderer) {
+          renderer.setMap(null);
         }
-      }
+      });
+      directionsRenderers.current = [];
 
-      if (!allValid || validWaypoints.length === 0) {
-        console.log("Some places have invalid coordinates - falling back to markers only");
-        fitBounds();
-        return;
-      }
-
-      // Get first and last items with valid coordinates
-      const firstItem = schedule.items[0];
-      const lastItem = schedule.items[schedule.items.length - 1];
-
-      if (!firstItem.travel_to_next ||
-        !lastItem.travel_to_next ||
-        !firstItem.travel_to_next.start_location ||
-        !lastItem.travel_to_next.end_location) {
-        console.log("Missing travel data for first or last item");
-        fitBounds();
-        return;
-      }
-
-      // Set up directions service
+      // Create separate route for each segment
       const directionsService = new window.google.maps.DirectionsService();
+      const requestPromises = [];
 
-      directionsService.route({
-        origin: new window.google.maps.LatLng(
-          firstItem.travel_to_next.start_location.lat,
-          firstItem.travel_to_next.start_location.lng
-        ),
-        destination: new window.google.maps.LatLng(
-          lastItem.travel_to_next.end_location.lat,
-          lastItem.travel_to_next.end_location.lng
-        ),
-        waypoints: validWaypoints,
-        travelMode: getTravelMode(travelMode),
-        optimizeWaypoints: false
-      }, (result, status) => {
-        if (status === window.google.maps.DirectionsStatus.OK) {
-          // Create new directions renderer
-          const renderer = new window.google.maps.DirectionsRenderer({
-            suppressMarkers: true,
-            polylineOptions: {
-              strokeColor: '#4285F4',
-              strokeWeight: 5,
-              strokeOpacity: 0.8,
-              icons: [{
-                icon: {
-                  path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-                  scale: 4,
-                  fillColor: '#FFFFFF',
-                  fillOpacity: 1,
-                  strokeColor: '#4285F4',
-                  strokeWeight: 2,
-                },
-                offset: '0',
-                repeat: '100px'
-              }]
-            }
-          });
-          renderer.setMap(map);
-          renderer.setDirections(result);
-          directionsRenderer.current = renderer;
-          setDirections(result);
-          fitBounds();
-        } else {
-          console.error("Directions request failed:", status);
-          setMapError(`Directions request failed: ${status}`);
-          // If directions fail, at least fit the map to the markers
-          fitBounds();
+      // Process each route segment between consecutive locations
+      for (let i = 0; i < schedule.items.length - 1; i++) {
+        const currentItem = schedule.items[i];
+        const nextItem = schedule.items[i + 1];
+
+        // Skip invalid segments - do thorough checks to satisfy TypeScript
+        if (!currentItem.travel_to_next || 
+            !nextItem.travel_to_next || 
+            !currentItem.travel_to_next.start_location || 
+            !nextItem.travel_to_next.start_location ||
+            typeof currentItem.travel_to_next.start_location.lat !== 'number' || 
+            typeof currentItem.travel_to_next.start_location.lng !== 'number' ||
+            typeof nextItem.travel_to_next.start_location.lat !== 'number' || 
+            typeof nextItem.travel_to_next.start_location.lng !== 'number') {
+          console.log(`Missing or invalid travel data for segment ${i} to ${i+1}`);
+          continue;
         }
+
+        // At this point TypeScript knows all the properties exist and are valid
+        const currentStartLocation = currentItem.travel_to_next.start_location;
+        const nextStartLocation = nextItem.travel_to_next.start_location;
+
+        // Get the color for this segment (matching the starting point marker)
+        const routeColor = markerColors[i % markerColors.length];
+        
+        // Create a dynamic offset for this route to prevent route overlap
+        // Use different patterns based on segment index
+        // This creates a curved offset pattern that increases with each segment
+        const offsetPattern = i % 4;
+        let latOffset = 0;
+        let lngOffset = 0;
+
+        // Apply different offset patterns based on segment number
+        switch(offsetPattern) {
+          case 0:
+            // Offset to the north-east
+            latOffset = 0.0002 * (i/4 + 1); 
+            lngOffset = 0.0002 * (i/4 + 1);
+            break;
+          case 1:
+            // Offset to the south-east
+            latOffset = -0.0002 * (i/4 + 1);
+            lngOffset = 0.0002 * (i/4 + 1); 
+            break;
+          case 2:
+            // Offset to the south-west
+            latOffset = -0.0002 * (i/4 + 1);
+            lngOffset = -0.0002 * (i/4 + 1);
+            break;
+          case 3:
+            // Offset to the north-west
+            latOffset = 0.0002 * (i/4 + 1);
+            lngOffset = -0.0002 * (i/4 + 1);
+            break;
+        }
+
+        // Create a request for this segment
+        const request = new Promise<void>((resolve) => {
+          directionsService.route({
+            origin: new window.google.maps.LatLng(
+              currentStartLocation.lat + latOffset,
+              currentStartLocation.lng + lngOffset
+            ),
+            destination: new window.google.maps.LatLng(
+              nextStartLocation.lat,
+              nextStartLocation.lng
+            ),
+            travelMode: getTravelMode(travelMode),
+            optimizeWaypoints: false
+          }, (result, status) => {
+            if (status === window.google.maps.DirectionsStatus.OK) {
+              // Create a directions renderer for this segment
+              const renderer = new window.google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: {
+                  strokeColor: routeColor,
+                  strokeWeight: 4 + (i % 3), // Vary line thickness (4, 5, or 6)
+                  strokeOpacity: 0.8,
+                  zIndex: 50 - i, // Higher indexes displayed on top
+                  icons: [{
+                    icon: {
+                      path: window.google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                      scale: 3 + (i % 2), // Vary arrow size (3 or 4)
+                      fillColor: '#FFFFFF',
+                      fillOpacity: 1,
+                      strokeColor: routeColor,
+                      strokeWeight: 2,
+                    },
+                    offset: '0',
+                    repeat: (80 + (i * 20)) + 'px' // Vary arrow spacing (80px, 100px, 120px, etc.)
+                  }]
+                }
+              });
+              renderer.setMap(map);
+              renderer.setDirections(result);
+              directionsRenderers.current.push(renderer);
+            } else {
+              console.error(`Directions request failed for segment ${i}: ${status}`);
+            }
+            resolve();
+          });
+        });
+
+        requestPromises.push(request);
+      }
+
+      // After all direction requests are processed, fit the map
+      Promise.all(requestPromises).then(() => {
+        fitBounds();
       });
     } catch (error) {
       console.error("Error setting up directions:", error);
@@ -332,7 +356,7 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
         {/* Display markers for each place in the schedule */}
         {schedulePlaces.map((place, index) => (
           <MapMarker
-            key={`schedule-${place.id}-${index}-${directions ? 'with-dir' : 'no-dir'}`}
+            key={`schedule-${place.id}-${index}-${directionsRenderers.current.length > 0 ? 'with-dir' : 'no-dir'}`}
             place={place}
             markerType="schedule"
             index={index}

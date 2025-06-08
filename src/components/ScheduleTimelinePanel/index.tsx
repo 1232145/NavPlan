@@ -78,9 +78,9 @@ const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({ travelMod
         {currentSchedule.items.map((item, index) => (
           <div key={item.place_id} className="schedule-item-card">
             <div className="schedule-time-infor">
-              <div className="time">{item.start_time}</div>
+              <div className="timeline-time">{item.start_time}</div>
               <div className="time-duration">{item.duration_minutes} min</div>
-              <div className="time">{item.end_time}</div>
+              <div className="timeline-time">{item.end_time}</div>
             </div>
             <div className="schedule-place-details">
               <h3>

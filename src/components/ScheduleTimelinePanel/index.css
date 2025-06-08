@@ -128,7 +128,7 @@
   position: relative;
 }
 
-.schedule-timeline-panel .time {
+.schedule-timeline-panel .timeline-time {
   color: var(--color-primary-500);
   font-size: 18px;
   font-weight: bold;
