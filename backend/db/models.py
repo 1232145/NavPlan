@@ -41,6 +41,7 @@ class ScheduleRequest(BaseModel):
     """Model for schedule generation request"""
     places: List[Dict[str, Any]]
     start_time: str = "09:00"  # Default start time
+    end_time: str = "19:00"    # Default end time
     travel_mode: str = "walking"  # Default travel mode (walking, driving, bicycling, transit) 
     prompt: Optional[str] = None  # Optional custom prompt for AI optimization
     day_overview: Optional[str] = None # Optional AI-generated day overview

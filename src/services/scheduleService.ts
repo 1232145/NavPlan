@@ -17,11 +17,12 @@ const schedulesCache = new Map<string, CachedSchedule>();
 const generateCacheKey = (
   places: Place[], 
   startTime: string, 
+  endTime: string,
   travelMode: string,
   dayOverview?: string
 ): string => {
   const placeIds = places.map(place => place.id).sort().join(',');
-  return `${placeIds}|${startTime}|${travelMode}|${dayOverview || ''}`;
+  return `${placeIds}|${startTime}|${endTime}|${travelMode}|${dayOverview || ''}`;
 };
 
 export const scheduleService = {
@@ -34,6 +35,7 @@ export const scheduleService = {
    * 
    * @param places List of places to consider for the schedule
    * @param startTime Start time in HH:MM format
+   * @param endTime End time in HH:MM format
    * @param travelMode Travel mode (walking, driving, bicycling, transit)
    * @param prompt Optional user preferences/instructions for the AI
    * @param dayOverview Optional existing day overview (for updating a schedule)
@@ -45,11 +47,12 @@ export const scheduleService = {
     travelMode: string = "walking",
     prompt?: string,
     dayOverview?: string,
-    total_places?: number
+    total_places?: number,
+    endTime: string = "19:00"
   ): Promise<Schedule> {
     // If this is an update request (has dayOverview), check cache
     const isUpdateRequest = !!dayOverview;
-    const cacheKey = generateCacheKey(places, startTime, travelMode, dayOverview);
+    const cacheKey = generateCacheKey(places, startTime, endTime, travelMode, dayOverview);
     
     // Only check cache for update requests, not for new schedule generation
     if (isUpdateRequest) {
@@ -65,6 +68,7 @@ export const scheduleService = {
     const response = await api.post('/schedules', {
       places,
       start_time: startTime,
+      end_time: endTime,
       travel_mode: travelMode,
       prompt,
       day_overview: dayOverview,
@@ -81,6 +85,7 @@ export const scheduleService = {
       generateCacheKey(
         schedule.items.map((item: ScheduleItem) => ({ id: item.place_id, name: item.name })) as Place[],
         startTime,
+        endTime,
         travelMode
       );
     

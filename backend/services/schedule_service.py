@@ -94,8 +94,14 @@ async def generate_schedule(
             # Get place address if available
             address = place.get('address', '')
             
-            # Determine visit duration based on place type
-            visit_duration_minutes = get_visit_duration(place_types)
+            # Check for AI-suggested duration first, fall back to default
+            visit_duration_minutes = place.get('duration_minutes') 
+            if not visit_duration_minutes or not isinstance(visit_duration_minutes, int) or visit_duration_minutes <= 0:
+                # Fallback to default durations
+                visit_duration_minutes = get_visit_duration(place_types)
+                logger.info(f"Using default duration {visit_duration_minutes} mins for {place_name}")
+            else:
+                logger.info(f"Using AI-suggested duration {visit_duration_minutes} mins for {place_name}")
             
             # Set start time for this place (current_datetime is already set correctly)
             visit_start_datetime = current_datetime

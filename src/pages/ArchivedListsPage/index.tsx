@@ -22,6 +22,8 @@ const ArchivedListsPage: React.FC = () => {
   // Schedule modal state for choosing start time
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [startTime, setStartTime] = useState('09:00');
+  const [endTime, setEndTime] = useState('19:00');
+  const [prompt, setPrompt] = useState('');
   const [selectedList, setSelectedList] = useState<ArchivedList | null>(null);
 
   useEffect(() => {
@@ -54,6 +56,7 @@ const ArchivedListsPage: React.FC = () => {
   const handleScheduleClose = () => {
     setScheduleOpen(false);
     setSelectedList(null);
+    setPrompt('');
   };
 
   const handleScheduleConfirm = async () => {
@@ -65,7 +68,15 @@ const ArchivedListsPage: React.FC = () => {
     // Wait a bit to ensure modal is closed before generating schedule
     setTimeout(async () => {
       if (selectedList) {
-        await generateSchedule(startTime, "walking", undefined, selectedList.places, undefined, selectedList.places.length);
+        await generateSchedule(
+          startTime, 
+          "walking", 
+          prompt, 
+          selectedList.places, 
+          undefined, 
+          selectedList.places.length,
+          endTime
+        );
         navigate('/schedule');
       }
     }, 50);
@@ -110,14 +121,41 @@ const ArchivedListsPage: React.FC = () => {
       >
         <DialogTitle id="schedule-dialog-title">Generate Schedule</DialogTitle>
         <DialogContent>
-          <p>Choose a start time for your day:</p>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '8px' }}>
+            <div style={{ flex: 1 }}>
+              <p>Start time:</p>
+              <TextField
+                type="time"
+                fullWidth
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                margin="dense"
+                InputLabelProps={{ shrink: true }}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p>End time:</p>
+              <TextField
+                type="time"
+                fullWidth
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                margin="dense"
+                InputLabelProps={{ shrink: true }}
+              />
+            </div>
+          </div>
+          
+          <p style={{ marginTop: '16px' }}>Custom preferences (optional):</p>
           <TextField
-            type="time"
+            multiline
+            rows={3}
             fullWidth
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
+            placeholder="E.g., 'Focus on outdoor activities' or 'Include more food stops'"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
             margin="dense"
-            InputLabelProps={{ shrink: true }}
+            label="Preferences"
           />
         </DialogContent>
         <DialogActions>

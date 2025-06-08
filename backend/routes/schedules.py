@@ -21,7 +21,7 @@ async def _process_places(request: ScheduleRequest) -> Tuple[List[Dict[str, Any]
     For updates (when day_overview is provided), it keeps the existing places and order.
     
     Args:
-        request: The schedule request containing places, start time, and optional day overview
+        request: The schedule request containing places, start time, end time, and optional day overview
         
     Returns:
         Tuple of (processed places, day overview)
@@ -32,12 +32,13 @@ async def _process_places(request: ScheduleRequest) -> Tuple[List[Dict[str, Any]
         return request.places, request.day_overview
     
     # This is a new schedule - use AI to optimize places
-    logger.info(f"Creating new schedule from {len(request.places)} places")
+    logger.info(f"Creating new schedule from {len(request.places)} places with time range: {request.start_time} to {request.end_time}")
     optimized_places, day_overview = await optimize_place_order(
         request.places,
         request.start_time,
         request.prompt,
-        request.travel_mode
+        request.travel_mode,
+        end_time=request.end_time
     )
     logger.info(f"AI selected {len(optimized_places)} places for the schedule")
     

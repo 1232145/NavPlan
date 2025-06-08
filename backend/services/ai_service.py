@@ -14,6 +14,7 @@ async def optimize_place_order(
     start_time: str, 
     prompt_text: str | None = None, 
     travel_mode: str = "walking",
+    end_time: str = "19:00"
 ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
     """
     Use AI to optimize the order of places and get a detailed recommendation.
@@ -23,6 +24,7 @@ async def optimize_place_order(
         start_time: Start time for the schedule in HH:MM format
         prompt_text: Optional custom prompt for the AI
         travel_mode: Mode of transportation (walking, driving, bicycling, transit)
+        end_time: End time for the schedule in HH:MM format
         
     Returns:
         A tuple containing:
@@ -35,7 +37,7 @@ async def optimize_place_order(
         
         logger.info(f"Optimizing order for {len(places)} places using AI")
         
-        return await ai_optimization(places, start_time, prompt_text, travel_mode) 
+        return await ai_optimization(places, start_time, prompt_text, travel_mode, end_time) 
         
     except Exception as e:
         logger.error(f"Error in optimize_place_order: {e}")
@@ -89,6 +91,7 @@ async def ai_optimization(
     start_time: str,
     prompt_text: str | None = None,
     travel_mode: str = "walking",
+    end_time: str = "19:00"
 ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
     """
     Use an AI model to optimize the order of places and get a detailed recommendation.
@@ -131,7 +134,8 @@ async def ai_optimization(
             prompt_text, 
             travel_mode, 
             select_subset=is_new_schedule,
-            place_count=len(places)
+            place_count=len(places),
+            end_time=end_time
         )
         
         ai_response_json: Dict[str, Any]
@@ -187,6 +191,7 @@ async def ai_optimization(
             ordered_indices = ai_response_json.get("ordered_indices")
             day_overview = ai_response_json.get("day_overview")
             place_reviews_from_ai = ai_response_json.get("place_reviews")
+            place_durations = ai_response_json.get("place_durations", {})
 
             if not isinstance(ordered_indices, list):
                 raise ValueError(f"'ordered_indices' not found or not a list in AI response. Response: {ai_response_json}")
@@ -242,12 +247,19 @@ async def ai_optimization(
                 
                 optimized_places_list = [places[i] for i in valid_indices]
 
-            # Attach AI reviews to places
+            # Attach AI reviews and durations to places
             if isinstance(place_reviews_from_ai, list):
                 review_map = {review['place_id']: review['review'] for review in place_reviews_from_ai if 'place_id' in review and 'review' in review}
                 for place in optimized_places_list:
                     if place.get('id') in review_map:
                         place['ai_review'] = review_map[place['id']]
+            
+            # Attach AI suggested durations
+            if isinstance(place_durations, dict):
+                for place in optimized_places_list:
+                    place_id = place.get('id')
+                    if place_id in place_durations and isinstance(place_durations[place_id], int) and place_durations[place_id] > 0:
+                        place['duration_minutes'] = place_durations[place_id]
 
             return optimized_places_list, day_overview if isinstance(day_overview, str) else None
             
@@ -268,101 +280,89 @@ def create_prompt(
     prompt_text: str | None = None, 
     travel_mode: str = "walking",
     select_subset: bool = True,
-    place_count: int = 0
+    place_count: int = 0,
+    end_time: str = "19:00"
 ) -> str:
     """Create a detailed prompt for the AI, with instructions to select a subset of places if needed."""
     places_json = json.dumps(place_data, indent=2)
     
-    # Default time estimates based on place type for AI reference
-    visit_duration_info = """
-Average visit durations by place type:
-- restaurants/cafes: 60-90 minutes
-- museums/galleries: 90-120 minutes
-- parks/outdoor: 45-60 minutes
-- shopping: 60-90 minutes
-- tourist attractions: 60-90 minutes
-- entertainment venues: 90-180 minutes
-- quick stops: 30 minutes
+    # Improved meal planning guidelines
+    meal_planning_guidelines = """
+Meal Planning Rules:
+- Schedule ONE main restaurant for lunch (typically between 12-2 PM)
+- Schedule ONE main restaurant for dinner (typically between 6-8 PM)
+- NEVER schedule main meal restaurants consecutively
+- Only schedule additional food places (like cafes, dessert shops, bubble tea, etc.) if they're for light refreshments, not full meals
+- Space attractions between meals
+- If the start time is before 10 AM, consider including a breakfast option
+"""
+
+    # Visit duration guidelines
+    visit_duration_guidelines = """
+For each place, determine an appropriate visit duration in minutes based on the place type and what visitors typically do there:
+- Museums/galleries: Typically 60-120 minutes depending on size and importance
+- Tourist attractions: 45-90 minutes depending on complexity
+- Parks/outdoor spaces: 30-60 minutes for casual visits
+- Restaurants: 60-90 minutes for a full meal
+- Cafes/dessert shops: 30-45 minutes
+- Retail/shopping: 30-60 minutes
 """
 
     # Base prompt elements
     selection_instructions = ""
-    output_format = ""
+    output_format_str = ""
     
     # Add selection instructions if this is a new schedule and we have multiple places
-    # Only select subset if we have 5 or more places (changed from 4)
     if select_subset and place_count >= 5:
         selection_instructions = f"""
-IMPORTANT: The user has provided {place_count} favorite places, which is too many to visit in one day. 
-Based on the following factors, SELECT A SUBSET of places that would make a reasonable awesome day trip:
-1. Places that are classied as iconic and must be visited.
-2. Geographic proximity (cluster places that are close together)
-3. Logical flow (variety of experiences, appropriate meal times if restaurants included)
-4. Time constraints (a typical day trip is 6-10 hours including travel time)
-5. Place compatibility (select places that work well together)
-6. The user should have breakfast, lunch, and dinner if the start time allows such a schedule.
-
-Only for example: if the user starts his day at 9am and has saved 3 museums, 4 restaurants, and 5 tourist attractions,
-you might select 1 museum, 1 restaurant for lunch, and 2 tourist attractions, 1 restaurant for dinner that are
-geographically close and would create a balanced day. 
+Select a subset of the {place_count} places to create a full day itinerary from {start_time} to approximately {end_time}.
+Balance meal times, geographical proximity, variety of experiences, and prioritize must-visit places.
 """
-        output_format = """
-Your response MUST only be a JSON object with the following keys and no other text:
-1. "selected_place_indices": A JSON array of indices of places you recommend including in the day trip (reference the 'index' field). For example: [0, 2, 5, 8]
-2. "ordered_indices": A JSON array of the SAME indices in your recommended visiting order. For example: [0, 5, 2, 8]
-3. "day_overview": A brief (2-4 sentences) and insightful summary of the entire day's itinerary, explaining why you selected these places and the overall flow.
-4. "place_reviews": A JSON array of objects, where each object has a "place_id" (matching the 'id' from the input place data) and a "review" (a 1-2 sentence positive review/highlight for that specific place in the context of the itinerary). Only include reviews for the selected places.
-
-Example of the JSON output format:
-{
-  "selected_place_indices": [0, 2, 5, 8],
-  "ordered_indices": [0, 5, 2, 8],
-  "day_overview": "This curated selection focuses on the city's historical center with a perfect mix of culture and cuisine. Starting with the museum in the morning allows you to beat the crowds, followed by a lunch spot with local specialties, and ending with relaxing attractions in the afternoon.",
-  "place_reviews": [
-    {"place_id": "ChIJUQ4S7rO3RIYRk4A4gQY03w", "review": "A perfect starting point to delve into local history, offering a serene morning experience before the crowds arrive."},
-    {"place_id": "ChIJ_U9b_x-3RIYRw2wA4gQY03w", "review": "The central location makes this a great spot for a mid-day meal, providing a vibrant atmosphere and delicious cuisine."},
-    {"place_id": "ChIJb_I2z-3RIYRXw2wA4gQY03w", "review": "Ideal for a relaxing afternoon stroll, offering beautiful scenery and a peaceful escape from the city bustle."},
-    {"place_id": "ChIJc_N2x-3RIYRAw2wA4gQY03w", "review": "A lively evening destination to unwind, offering great drinks and a chance to experience the local nightlife."}
-  ]
-}
+        output_format_str = """
+Your response must be a JSON object with the following keys:
+1. "selected_place_indices": Array of indices you recommend [e.g., 0, 2, 5, 8]
+2. "ordered_indices": Same selected indices in your recommended visiting order
+3. "day_overview": Brief summary of the day (2-3 sentences)
+4. "place_reviews": Array of objects with "place_id" and "review" (1 sentence per place)
+5. "place_durations": Object mapping place_id to recommended visit duration in minutes (e.g., {"place123": 60, "place456": 90})
 """
     else:
-        # For small lists or existing schedules, don't select a subset
-        output_format = """
-Your response MUST only be a JSON object with the following keys and no other text:
-1. "ordered_indices": A JSON array of original indices representing the optimized order. For example: [0, 2, 1, 3] (based on the 'index' field in the input place data).
-2. "day_overview": A brief (2-4 sentences) and insightful summary of the entire day's itinerary, highlighting the overall flow and key recommendations.
-3. "place_reviews": A JSON array of objects, where each object has a "place_id" (matching the 'id' from the input place data) and a "review" (a 1-2 sentence positive review/highlight for that specific place in the context of the itinerary). Ensure all places in the ordered_indices have a corresponding review.
-
-Example of the JSON output format:
-{
-  "ordered_indices": [0, 2, 1, 3],
-  "day_overview": "This itinerary provides a fantastic blend of cultural immersion and relaxing green spaces, starting with historical sites in the morning and concluding with evening entertainment. The pacing allows for a leisurely exploration of each destination.",
-  "place_reviews": [
-    {"place_id": "ChIJUQ4S7rO3RIYRk4A4gQY03w", "review": "A perfect starting point to delve into local history, offering a serene morning experience before the crowds arrive."},
-    {"place_id": "ChIJ_U9b_x-3RIYRw2wA4gQY03w", "review": "The central location makes this a great spot for a mid-day meal, providing a vibrant atmosphere and delicious cuisine."},
-    {"place_id": "ChIJb_I2z-3RIYRXw2wA4gQY03w", "review": "Ideal for a relaxing afternoon stroll, offering beautiful scenery and a peaceful escape from the city bustle."},
-    {"place_id": "ChIJc_N2x-3RIYRAw2wA4gQY03w", "review": "A lively evening destination to unwind, offering great drinks and a chance to experience the local nightlife."}
-  ]
-}
+        # For small lists or existing schedules
+        selection_instructions = f"""
+Create a full day itinerary from the user's start_time to approximately {end_time}, ordering the places optimally.
+"""
+        output_format_str = """
+Your response must be a JSON object with the following keys:
+1. "ordered_indices": Array of indices in optimized order [e.g., 0, 2, 1, 3]
+2. "day_overview": Brief summary of the day (2-3 sentences)
+3. "place_reviews": Array of objects with "place_id" and "review" (1 sentence per place)
+4. "place_durations": Object mapping place_id to recommended visit duration in minutes (e.g., {"place123": 45, "place456": 90})
 """
 
-    # Combine all elements to create the full prompt
-    return f"""You are an expert travel route optimizer. Your task is to {selection_instructions and 'select and' or ''} determine the most efficient and enjoyable order to visit places, creating an optimal day itinerary.
+    # Determine user preferences fallback
+    user_preferences_text = prompt_text if prompt_text else \
+        "Prioritize a logical flow with varied activities and well-spaced meals throughout the day."
 
-Places (with details):
+    # Combine all elements to create the full prompt
+    return f"""You are an expert travel route optimizer creating an optimal full-day itinerary.
+Start the day at {start_time} and plan until around {end_time} (included travel time).
+
+Places:
 {places_json}
 
 {selection_instructions}
 
-Consider the following factors when optimizing the route:
-1. User preferences: {prompt_text if prompt_text else 'None specified. Optimize for efficiency and enjoyable flow.'}
-2. **Travel Mode:** {travel_mode}
-3. **Start Time:** {start_time}
-4. Geographical distances between locations
-5. Types of places and their typical visit durations
-{visit_duration_info}
-6. A logical flow for a day trip, taking into account typical operating hours
+{meal_planning_guidelines}
 
-{output_format}
+{visit_duration_guidelines}
+
+Considerations:
+1. User preferences: {user_preferences_text}
+2. Travel mode: {travel_mode}
+3. Visit duration: Assign a specific duration to each place that's appropriate for its type and importance
+4. Geographical proximity between locations
+5. CRITICAL: Avoid scheduling multiple main restaurants consecutively - separate them with attractions
+6. For restaurants, carefully identify if they're a main meal place or just a light refreshment stop
+
+{output_format_str}
 """ 

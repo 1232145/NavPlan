@@ -19,7 +19,8 @@ interface AppContextType {
     prompt?: string,
     places?: Place[],
     dayOverviewForUpdate?: string,
-    totalPlaces?: number
+    totalPlaces?: number,
+    endTime?: string
   ) => Promise<void>;
   searchResults: Place[];
   setSearchResults: React.Dispatch<React.SetStateAction<Place[]>>;
@@ -105,7 +106,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     prompt?: string,
     places?: Place[], // If provided, this is an update
     dayOverviewForUpdate?: string,
-    totalPlaces?: number
+    totalPlaces?: number,
+    endTime: string = "19:00"
   ) => {
     const placesToUse = places || favoritePlaces;
     
@@ -122,7 +124,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         travelMode, 
         prompt, 
         dayOverviewForUpdate,
-        totalPlaces
+        totalPlaces,
+        endTime
       );
       
       setCurrentSchedule(newSchedule);
