@@ -8,6 +8,9 @@ class ArchivedList(BaseModel):
     name: str
     places: List[Dict[str, Any]]
     note: Optional[str] = None
+    similar_public_places: List[str] = []  # POI IDs from public datasets
+    popularity_score: Optional[float] = None
+    ai_generated_tags: List[str] = []
 
 # Schedule Models
 class RouteSegment(BaseModel):
@@ -45,3 +48,28 @@ class ScheduleRequest(BaseModel):
     travel_mode: str = "walking"  # Default travel mode (walking, driving, bicycling, transit) 
     prompt: Optional[str] = None  # Optional custom prompt for AI optimization
     day_overview: Optional[str] = None # Optional AI-generated day overview
+
+# Enhanced Models for MongoDB Challenge - Public Dataset Integration
+
+class PublicPOI(BaseModel):
+    """Model for public POI data from OpenStreetMap/Foursquare"""
+    poi_id: str
+    name: str
+    location: Dict[str, Any]  # GeoJSON format: {type: "Point", coordinates: [lng, lat]}
+    address: str
+    category: str
+    subcategory: Optional[str] = None
+    opening_hours: Optional[str] = None
+    rating: Optional[float] = None
+    amenities: List[str] = []
+    source: str  # "osm", "foursquare", "poidata"
+    source_id: str
+    last_updated: datetime
+
+class CheckinPattern(BaseModel):
+    """Model for check-in pattern analysis from academic datasets"""
+    pattern_id: str
+    location: Dict[str, Any]  # GeoJSON format: {type: "Point", coordinates: [lng, lat]}
+    venue_category: str
+    time_patterns: Dict[str, Any]  # hour, day, season patterns
+    popularity_score: float
