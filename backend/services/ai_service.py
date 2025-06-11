@@ -122,56 +122,94 @@ async def vector_search_places(places: List[Dict[str, Any]], query: str, top_k: 
             logger.warning("Could not create query embedding, returning all places")
             return places
         
-        # Create embeddings for all places and calculate similarity
-        place_scores = []
-        
-        for i, place in enumerate(places):
-            # Create text representation
+        # PERFORMANCE OPTIMIZATION: Batch process all place texts at once
+        place_texts = []
+        for place in places:
             place_text = create_place_text_for_embedding(place)
-            logger.debug(f"Place {i} text: {place_text}")
-            
-            # Create embedding
-            place_embedding = await create_place_embedding(place_text)
-            
-            if place_embedding:
-                # Calculate cosine similarity
-                similarity = cosine_similarity(query_embedding, place_embedding)
-                place_scores.append((i, similarity, place))
-                logger.debug(f"Place {i} ({place.get('name', 'Unknown')}) similarity: {similarity:.3f}")
+            place_texts.append(place_text)
+        
+        # Create all embeddings in a single batch call for massive speed improvement
+        model = get_embedding_model()
+        if model is None:
+            logger.warning("Could not load embedding model")
+            return places
+        
+        # Batch encode all place texts at once (much faster than individual calls)
+        place_embeddings = model.encode(place_texts, convert_to_tensor=False, show_progress_bar=False)
+        
+        # Calculate similarities in batch
+        place_scores = []
+        for i, (place, place_embedding) in enumerate(zip(places, place_embeddings)):
+            if hasattr(place_embedding, 'tolist'):
+                place_embedding = place_embedding.tolist()
             else:
-                # If embedding fails, give it a neutral score
-                place_scores.append((i, 0.5, place))
-                logger.warning(f"Failed to create embedding for place {i}, using neutral score")
+                place_embedding = list(place_embedding)
+            
+            similarity = cosine_similarity(query_embedding, place_embedding)
+            place_scores.append((i, similarity, place))
         
         # Sort by similarity score (highest first)
         place_scores.sort(key=lambda x: x[1], reverse=True)
         
-        # Determine how many places to return
+        # Implement diversity-aware selection instead of pure similarity
         if top_k is None:
-            # Dynamic selection based on similarity scores
-            # Take places with similarity > 0.7, but at least 3 and at most 12
-            high_similarity_places = [p for p in place_scores if p[1] > 0.7]
-            if len(high_similarity_places) >= 3:
-                top_k = min(len(high_similarity_places), 12)
-            else:
-                # If not enough high similarity, take top 50% but at least 3
-                top_k = max(3, len(places) // 2)
+            # More generous selection - aim for 60-80% of places for better diversity
+            top_k = max(8, int(len(places) * 0.7))  # Take 70% of places, minimum 8
         
-        # Select top places
-        selected_places = [place_data[2] for place_data in place_scores[:top_k]]
+        # Diversity-aware selection: ensure we don't have too many of the same category
+        selected_places = []
+        category_counts = {}
+        max_per_category = 3  # Maximum places per category type
+        
+        # First pass: select high-relevance places with diversity constraints
+        for idx, similarity, place in place_scores:
+            if len(selected_places) >= top_k:
+                break
+                
+            place_category = place.get('category', 'unknown')
+            category_count = category_counts.get(place_category, 0)
+            
+            # Allow high-similarity places even if category is full, but with lower priority
+            if category_count < max_per_category or similarity > 0.4:
+                selected_places.append(place)
+                category_counts[place_category] = category_count + 1
+        
+        # Second pass: fill remaining slots with diverse categories if needed
+        if len(selected_places) < top_k:
+            for idx, similarity, place in place_scores:
+                if len(selected_places) >= top_k:
+                    break
+                    
+                if place not in selected_places:
+                    place_category = place.get('category', 'unknown')
+                    # Prioritize categories we don't have much of
+                    if category_counts.get(place_category, 0) <= 1:
+                        selected_places.append(place)
+                        category_counts[place_category] = category_counts.get(place_category, 0) + 1
         
         logger.info(f"Vector search selected {len(selected_places)} places out of {len(places)}")
-        logger.info(f"Top similarity scores: {[round(score[1], 3) for score in place_scores[:5]]}")
+        if place_scores:
+            top_scores = [score for _, score, _ in place_scores[:5]]
+            logger.info(f"Top similarity scores: {top_scores}")
         
-        # Log the selected places for debugging
-        selected_names = [p.get('name', 'Unknown') for p in selected_places]
+        # Log category diversity for debugging
+        selected_categories = {}
+        for place in selected_places:
+            cat = place.get('category', 'unknown')
+            selected_categories[cat] = selected_categories.get(cat, 0) + 1
+        logger.info(f"Category diversity: {selected_categories}")
+        
+        # Log selected place names for debugging
+        selected_names = [place.get('name', 'Unknown') for place in selected_places]
         logger.info(f"Selected places: {selected_names}")
         
         return selected_places
         
     except Exception as e:
         logger.error(f"Error in vector search: {e}")
-        return places  # Return all places if vector search fails
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
+        return places
 
 def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """
@@ -275,8 +313,7 @@ async def query_AI_openRouter(prompt: str, model: str, api_key: str) -> Dict[str
             },
             json={
                 "model": model,
-                "messages": [{"role": "user", "content": prompt}],
-                "response_format": {"type": "json_object"}
+                "messages": [{"role": "user", "content": prompt}]
             }
         )
         
@@ -526,26 +563,44 @@ def create_prompt(
     
     places_description = "\n\n".join(descriptions)
     
-    # Improved meal planning guidelines
-    meal_planning_guidelines = """
-Meal Planning Rules:
-- Schedule ONE main restaurant for lunch (typically between 12-2 PM)
-- Schedule ONE main restaurant for dinner (typically between 6-8 PM)
-- NEVER schedule main meal restaurants consecutively
-- Only schedule additional food places (like cafes, dessert shops, bubble tea, etc.) if they're for light refreshments, not full meals
-- Space attractions between meals
-- If the start time is before 10 AM, consider including a breakfast option
+    # Calculate available time for better planning
+    start_hour, start_minute = map(int, start_time.split(':'))
+    end_hour, end_minute = map(int, end_time.split(':'))
+    total_available_minutes = (end_hour * 60 + end_minute) - (start_hour * 60 + start_minute)
+    
+    # CRITICAL time management guidelines
+    time_management_guidelines = f"""
+CRITICAL TIME CONSTRAINTS:
+- Start time: {start_time}
+- End time: {end_time} (MUST NOT EXCEED)
+- Total available time: {total_available_minutes} minutes ({total_available_minutes // 60}h {total_available_minutes % 60}m)
+- NEVER schedule activities beyond {end_time}
+- Include realistic travel time between locations
+- Aim to finish all activities by {end_time} at the latest
 """
 
-    # Visit duration guidelines
+    # Improved meal planning guidelines
+    meal_planning_guidelines = """
+MEAL SPACING REQUIREMENTS:
+- NEVER place two restaurants consecutively in the schedule
+- ALWAYS have at least 2 non-food places between restaurants
+- Include exactly ONE lunch restaurant (12:00-14:00) unless cafe or snacks
+- Include maximum ONE dinner restaurant (17:30+ if time allows) unless cafe or snacks
+- Cafes/light snacks are separate from main restaurants
+- If you run out of diverse place types, END THE SCHEDULE EARLY rather than repeating restaurants
+- Better to have 4-5 well-spaced places than 6+ with poor spacing
+"""
+
+    # Visit duration guidelines with realistic timing
     visit_duration_guidelines = """
-For each place, determine an appropriate visit duration in minutes based on the place type and what visitors typically do there:
-- Museums/galleries: Typically 60-120 minutes depending on size and importance
-- Tourist attractions: 45-90 minutes depending on complexity
-- Parks/outdoor spaces: 30-60 minutes for casual visits
-- Restaurants: 60-90 minutes for a full meal
-- Cafes/dessert shops: 30-45 minutes
-- Retail/shopping: 30-60 minutes
+REALISTIC VISIT DURATIONS (include buffer time):
+- Major museums/galleries: 60-90 minutes maximum
+- Tourist attractions: 45-60 minutes
+- Parks/outdoor spaces: 30-45 minutes for casual visits
+- Main meal restaurants: 60-90 minutes
+- Cafes/dessert shops: 20-30 minutes
+- Shopping/retail: 30-45 minutes
+- Travel time: Account for realistic walking/transit times between places
 """
 
     # Base prompt elements
@@ -554,9 +609,11 @@ For each place, determine an appropriate visit duration in minutes based on the 
     
     # Add selection instructions if this is a new schedule and we have multiple places
     if select_subset and place_count >= 5:
+        max_places = min(8, max(4, total_available_minutes // 90))  # Conservative place count based on time
         selection_instructions = f"""
-Select a subset of the {place_count} places to create a full day itinerary from {start_time} to approximately {end_time}.
-Balance meal times, geographical proximity, variety of experiences, and prioritize must-visit places.
+Select {max_places} places maximum to create a realistic full day itinerary from {start_time} to {end_time}.
+PRIORITIZE: meal timing, geographical proximity, variety of experiences.
+ENSURE: The schedule fits within the {total_available_minutes} minute time window.
 """
         
         output_format_str = """
@@ -565,24 +622,26 @@ Your response must be a JSON object with the following keys:
 2. "ordered_indices": Same selected indices in your recommended visiting order
 3. "day_overview": Brief summary of the day (2-3 sentences)
 4. "place_reviews": Array of objects with "place_id" (use the ID from the place description) and "review" (1 sentence per place) [e.g., [{"place_id": "ChIJ123", "review": "Great museum with fascinating exhibits"}]]
-5. "place_durations": Object mapping place_id to recommended visit duration in minutes (e.g., {"ChIJ123": 60, "ChIJ456": 90})
+5. "place_durations": Object mapping place_id to recommended visit duration in minutes (e.g., {"ChIJ123": 45, "ChIJ456": 60})
 """
     else:
         # For small lists or existing schedules
         selection_instructions = f"""
-Create a full day itinerary from {start_time} to approximately {end_time}, ordering the places optimally.
+Create a realistic full day itinerary from {start_time} to {end_time}, ordering the places optimally.
+ENSURE the schedule fits within the {total_available_minutes} minute time window.
 """
         output_format_str = """
 Your response must be a JSON object with the following keys:
 1. "ordered_indices": Array of indices in optimized order [e.g., 0, 2, 1, 3]
 2. "day_overview": Brief summary of the day (2-3 sentences)
 3. "place_reviews": Array of objects with "place_id" (use the ID from the place description) and "review" (1 sentence per place) [e.g., [{"place_id": "ChIJ123", "review": "Perfect spot for lunch with great views"}]]
-4. "place_durations": Object mapping place_id to recommended visit duration in minutes (e.g., {"ChIJ123": 45, "ChIJ456": 90})
+4. "place_durations": Object mapping place_id to recommended visit duration in minutes (e.g., {"ChIJ123": 45, "ChIJ456": 60})
 """
 
     # Combine all elements to create the full prompt
-    return f"""You are an expert travel route optimizer creating an optimal full-day itinerary.
-Start the day at {start_time} and plan until around {end_time} (included travel time).
+    return f"""You are an expert travel route optimizer creating a REALISTIC and TIME-CONSTRAINED full-day itinerary.
+
+{time_management_guidelines}
 
 Places (enriched with public data insights):
 {places_description}
@@ -593,13 +652,14 @@ Places (enriched with public data insights):
 
 {visit_duration_guidelines}
 
-Considerations:
+CRITICAL REQUIREMENTS:
 1. User preferences: {prompt_text if prompt_text else "Prioritize a logical flow with varied activities and well-spaced meals throughout the day."}
 2. Travel mode: {travel_mode}
-3. Visit duration: Assign a specific duration to each place that's appropriate for its type and importance
-4. Geographical proximity between locations
-5. CRITICAL: Avoid scheduling multiple main restaurants consecutively - separate them with attractions
-6. For restaurants, carefully identify if they're a main meal place or just a light refreshment stop
+3. TIME CONSTRAINT: All activities MUST end by {end_time}
+4. MEAL SPACING: NEVER schedule restaurants consecutively - always have 2+ non-food places between meals
+5. QUALITY OVER QUANTITY: End schedule early rather than repeating similar venue types
+6. DIVERSITY: Prioritize variety in place types over total number of places
+7. REALISM: Account for travel time and realistic visit durations
 
 {output_format_str}
 """ 

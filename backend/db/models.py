@@ -42,12 +42,20 @@ class Schedule(BaseModel):
 
 class ScheduleRequest(BaseModel):
     """Model for schedule generation request"""
-    places: List[Dict[str, Any]]
+    places: List[Dict[str, Any]] = []
     start_time: str = "09:00"  # Default start time
     end_time: str = "19:00"    # Default end time
     travel_mode: str = "walking"  # Default travel mode (walking, driving, bicycling, transit) 
     prompt: Optional[str] = None  # Optional custom prompt for AI optimization
     day_overview: Optional[str] = None # Optional AI-generated day overview
+
+class LocationScheduleRequest(ScheduleRequest):
+    """Model for location-based schedule generation request that extends ScheduleRequest"""
+    latitude: float
+    longitude: float
+    radius_meters: int = 5000  # Default 5km radius
+    categories: Optional[List[str]] = None  # Optional category filters
+    max_places: int = 20  # Maximum places to consider from public POI data
 
 # Enhanced Models for MongoDB Challenge - Public Dataset Integration
 

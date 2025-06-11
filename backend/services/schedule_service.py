@@ -45,7 +45,8 @@ async def generate_schedule(
     places: List[Dict[str, Any]], 
     start_time_str: str, 
     travel_mode: str = "walking",
-    day_overview: Optional[str] = None
+    day_overview: Optional[str] = None,
+    end_time_str: str = "19:00"
 ) -> Schedule:
     """
     Generate a detailed schedule with travel times and visit durations
@@ -55,6 +56,7 @@ async def generate_schedule(
         start_time_str: Start time for the schedule in HH:MM format
         travel_mode: Mode of transportation (walking, driving, bicycling, transit)
         day_overview: Optional overview of the day from AI
+        end_time_str: End time constraint for the schedule
         
     Returns:
         Schedule object with detailed timeline
@@ -62,10 +64,15 @@ async def generate_schedule(
     try:
         logger.info(f"Generating schedule for {len(places)} places starting at {start_time_str}")
         
-        # Parse start time
+        # Parse start and end times
         start_hour, start_minute = map(int, start_time_str.split(':'))
         start_datetime = datetime.now().replace(
             hour=start_hour, minute=start_minute, second=0, microsecond=0
+        )
+        
+        end_hour, end_minute = map(int, end_time_str.split(':'))
+        end_datetime = datetime.now().replace(
+            hour=end_hour, minute=end_minute, second=0, microsecond=0
         )
         
         # Pre-calculate all travel times and distances
@@ -78,13 +85,42 @@ async def generate_schedule(
         total_distance_meters = 0
         current_datetime = start_datetime
         
-        # Process each place
+        # Process each place with time constraint validation
         for i, place in enumerate(places):
-            # Extract basic place information
+            # Check if we would exceed the end time before adding this place
             place_name = place.get('name', f'Place {i+1}')
+            
+            # Check for AI-suggested duration first, fall back to default
+            visit_duration_minutes = place.get('duration_minutes') 
+            if not visit_duration_minutes or not isinstance(visit_duration_minutes, int) or visit_duration_minutes <= 0:
+                place_type = place.get('placeType', 'default')
+                place_types = [place_type]
+                visit_duration_minutes = get_visit_duration(place_types)
+                logger.info(f"Using default duration {visit_duration_minutes} mins for {place_name}")
+            else:
+                logger.info(f"Using AI-suggested duration {visit_duration_minutes} mins for {place_name}")
+            
+            # Calculate projected end time for this place
+            projected_end_time = current_datetime + timedelta(minutes=visit_duration_minutes)
+            
+            # CRITICAL: Check if this place would exceed our end time constraint
+            if projected_end_time > end_datetime:
+                # Calculate remaining time available
+                remaining_minutes = (end_datetime - current_datetime).total_seconds() / 60
+                
+                if remaining_minutes < 15:  # Less than 15 minutes left
+                    logger.warning(f"Stopping schedule at place {i} ({place_name}) - insufficient time remaining ({remaining_minutes:.1f} mins)")
+                    break
+                else:
+                    # Adjust duration to fit remaining time (with 5-minute buffer)
+                    adjusted_duration = max(15, int(remaining_minutes - 5))
+                    logger.warning(f"Adjusting duration for {place_name} from {visit_duration_minutes} to {adjusted_duration} mins to fit end time")
+                    visit_duration_minutes = adjusted_duration
+                    projected_end_time = current_datetime + timedelta(minutes=visit_duration_minutes)
+            
+            # Extract basic place information
             place_id = place.get('id', f'place_{i}')
             place_type = place.get('placeType', 'default')
-            place_types = [place_type]
             
             # Get location coordinates
             location = place.get('location', {})
@@ -93,15 +129,6 @@ async def generate_schedule(
             
             # Get place address if available
             address = place.get('address', '')
-            
-            # Check for AI-suggested duration first, fall back to default
-            visit_duration_minutes = place.get('duration_minutes') 
-            if not visit_duration_minutes or not isinstance(visit_duration_minutes, int) or visit_duration_minutes <= 0:
-                # Fallback to default durations
-                visit_duration_minutes = get_visit_duration(place_types)
-                logger.info(f"Using default duration {visit_duration_minutes} mins for {place_name}")
-            else:
-                logger.info(f"Using AI-suggested duration {visit_duration_minutes} mins for {place_name}")
             
             # Set start time for this place (current_datetime is already set correctly)
             visit_start_datetime = current_datetime
@@ -148,6 +175,14 @@ async def generate_schedule(
                     distance_meters = int(distance_km * 1000)
                     travel_time_minutes = estimate_travel_time(distance_km, travel_mode)
                 
+                # Check if adding travel time would exceed end time
+                travel_end_time = visit_end_datetime + timedelta(minutes=travel_time_minutes)
+                if travel_end_time > end_datetime:
+                    logger.warning(f"Stopping schedule - travel to next place would exceed end time at {travel_end_time.strftime('%H:%M')}")
+                    # Don't add travel segment, and stop processing
+                    schedule_items.append(schedule_item)
+                    break
+                
                 # Create the route segment
                 route_segment = RouteSegment(
                     start_location={"lat": lat, "lng": lng},
@@ -170,27 +205,40 @@ async def generate_schedule(
             
             # Add to schedule
             schedule_items.append(schedule_item)
+            
+            # Final check: if we've reached or exceeded end time, stop
+            if current_datetime >= end_datetime:
+                logger.info(f"Schedule complete - reached end time constraint at {current_datetime.strftime('%H:%M')}")
+                break
         
         # Add a dummy travel segment to the last place for map display purposes
         if schedule_items:
             last_item = schedule_items[-1]
             if last_item.travel_to_next is None and places:
-                last_place = places[-1]
-                last_location = last_place.get('location', {})
-                lat = last_location.get('lat', 0)
-                lng = last_location.get('lng', 0)
-                
-                last_item.travel_to_next = RouteSegment(
-                    start_location={"lat": lat, "lng": lng},
-                    end_location={"lat": lat, "lng": lng},
-                    distance={"text": "0 m", "value": 0},
-                    duration={"text": "0 mins", "value": 0},
-                    polyline=""
-                )
+                last_place_idx = len(schedule_items) - 1
+                if last_place_idx < len(places):
+                    last_place = places[last_place_idx]
+                    last_location = last_place.get('location', {})
+                    lat = last_location.get('lat', 0)
+                    lng = last_location.get('lng', 0)
+                    
+                    last_item.travel_to_next = RouteSegment(
+                        start_location={"lat": lat, "lng": lng},
+                        end_location={"lat": lat, "lng": lng},
+                        distance={"text": "0 m", "value": 0},
+                        duration={"text": "0 mins", "value": 0},
+                        polyline=""
+                    )
         
         # Calculate total schedule duration (from start to end of last activity)
         if schedule_items:
             total_duration_minutes = calculate_total_duration(start_datetime, current_datetime)
+            
+            # Validate the schedule doesn't exceed time constraints
+            if current_datetime > end_datetime:
+                logger.error(f"SCHEDULE TIME OVERFLOW: Schedule ends at {current_datetime.strftime('%H:%M')} but should end by {end_time_str}")
+                # Truncate to fit time constraint
+                total_duration_minutes = (end_datetime - start_datetime).total_seconds() / 60
         else:
             total_duration_minutes = 0
             

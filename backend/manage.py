@@ -18,7 +18,7 @@ def create_db():
     try:
         with get_database() as db:
             # Create collections if they don't exist
-            collections = ['archived_lists', 'public_pois', 'checkin_patterns']
+            collections = ['archived_lists', 'public_pois']
             for collection_name in collections:
                 if collection_name not in db.list_collection_names():
                     db.create_collection(collection_name)
@@ -28,7 +28,6 @@ def create_db():
             db.archived_lists.create_index("user_id")
             db.public_pois.create_index([("location", "2dsphere")])
             db.public_pois.create_index("category")
-            db.checkin_patterns.create_index([("location", "2dsphere")])
             
             print("Database setup completed successfully")
     except Exception as e:
@@ -146,29 +145,11 @@ def import_public_data(bbox="-74.0,40.7,-73.9,40.8", categories=""):
             print("Importing OpenStreetMap POIs...")
             pois = await public_data_service.import_osm_pois(bbox_coords, category_list)
             
-            # For demo purposes, create some sample check-in data
-            sample_checkins = []
-            for poi in pois[:10]:  # Use first 10 POIs for demo
-                # Extract lat/lng from GeoJSON format
-                coords = poi.location["coordinates"]  # [lng, lat]
-                sample_checkins.append({
-                    "lat": coords[1],  
-                    "lng": coords[0],
-                    "venue_category": poi.category,
-                    "date": "2024-1-15",
-                    "time": "12:30:0",
-                    "user_id": "demo_user"
-                })
-            
-            # Analyze check-in patterns
-            print("Analyzing check-in patterns...")
-            patterns = await public_data_service.analyze_checkin_patterns(sample_checkins)
-            
             # Store data in MongoDB
             print("Storing data in MongoDB...")
-            await public_data_service.store_public_data(pois, patterns)
+            await public_data_service.store_public_data(pois)
             
-            print(f"Successfully imported {len(pois)} POIs and {len(patterns)} patterns")
+            print(f"Successfully imported {len(pois)} POIs")
             
         except Exception as e:
             print(f"Error importing public data: {e}")
