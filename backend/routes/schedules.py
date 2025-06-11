@@ -1,17 +1,31 @@
 import logging
 from fastapi import APIRouter, Body, Depends, HTTPException
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Optional
+from pydantic import BaseModel
 from db.models import ScheduleRequest, Schedule
 from services.ai_service import optimize_place_order
 from services.schedule_service import generate_schedule
 from utils.auth import get_current_user
 from config import API_PREFIX
+from db import get_database
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Create router
 router = APIRouter(prefix=API_PREFIX, tags=["schedules"])
+
+class LocationScheduleRequest(BaseModel):
+    """Model for location-based schedule generation request"""
+    latitude: float
+    longitude: float
+    radius_meters: int = 5000  # Default 5km radius
+    start_time: str = "09:00"
+    end_time: str = "19:00"
+    travel_mode: str = "walking"
+    categories: Optional[List[str]] = None  # Optional category filters
+    max_places: int = 20  # Maximum places to consider
+    prompt: Optional[str] = None  # Optional custom prompt for AI
 
 async def _process_places(request: ScheduleRequest) -> Tuple[List[Dict[str, Any]], str]:
     """
@@ -95,4 +109,130 @@ async def create_schedule(
     
     except Exception as e:
         logger.error(f"Error creating schedule: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate schedule: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"Failed to generate schedule: {str(e)}")
+
+@router.post("/schedules/generate-from-location", response_model=Dict[str, Any])
+async def generate_schedule_from_location(
+    request: LocationScheduleRequest = Body(...),
+    user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Generate an AI-optimized schedule from public POI data based on user's current location.
+    
+    This endpoint:
+    1. Finds nearby public POIs from the database within the specified radius
+    2. Uses AI to select and optimize a subset of places for a good day schedule
+    3. Generates routing and timing information
+    
+    Args:
+        request: Location-based schedule request with coordinates, preferences, and timing
+        user: Current authenticated user
+        
+    Returns:
+        Dictionary with generated schedule and metadata about the discovery
+    """
+    try:
+        logger.info(f"Generating location-based schedule for user {user['id']} at ({request.latitude}, {request.longitude})")
+        
+        # Query nearby public POIs from database
+        with get_database() as db:
+            # Build query for nearby POIs
+            query = {
+                "location": {
+                    "$near": {
+                        "$geometry": {
+                            "type": "Point", 
+                            "coordinates": [request.longitude, request.latitude]  # [lng, lat] for GeoJSON
+                        },
+                        "$maxDistance": request.radius_meters
+                    }
+                }
+            }
+            
+            # Add category filter if specified
+            if request.categories:
+                query["category"] = {"$in": request.categories}
+            
+            # Find nearby POIs
+            nearby_pois = list(db.public_pois.find(query).limit(request.max_places))
+            
+            if not nearby_pois:
+                raise HTTPException(
+                    status_code=404, 
+                    detail=f"No public POIs found within {request.radius_meters}m of the specified location"
+                )
+            
+            logger.info(f"Found {len(nearby_pois)} nearby POIs")
+            
+            # Convert POIs to the format expected by the schedule generation
+            places = []
+            for poi in nearby_pois:
+                # Convert GeoJSON coordinates back to lat/lng format
+                coords = poi["location"]["coordinates"]  # [lng, lat]
+                
+                place = {
+                    "id": poi["poi_id"],
+                    "name": poi["name"],
+                    "placeType": poi.get("subcategory", poi["category"]),  # Use subcategory if available
+                    "address": poi["address"],
+                    "geometry": {
+                        "location": {
+                            "lat": coords[1],  # latitude
+                            "lng": coords[0]   # longitude
+                        }
+                    },
+                    "rating": poi.get("rating"),
+                    "source": poi["source"],
+                    "category": poi["category"],
+                    "opening_hours": poi.get("opening_hours"),
+                    "note": f"Public POI from {poi['source']} - {poi['category']}"
+                }
+                places.append(place)
+            
+            # Create a custom prompt that incorporates location context
+            location_prompt = request.prompt or f"""
+            Create a great day schedule from these nearby places within {request.radius_meters/1000}km. 
+            Focus on creating a logical flow that minimizes travel time and maximizes enjoyment.
+            Consider the variety of place types and try to balance different activities.
+            """
+            
+            # Use AI to optimize the selection and ordering of places
+            logger.info("Using AI to optimize place selection and ordering")
+            optimized_places, day_overview = await optimize_place_order(
+                places,
+                request.start_time,
+                location_prompt,
+                request.travel_mode,
+                end_time=request.end_time
+            )
+            
+            logger.info(f"AI selected {len(optimized_places)} places from {len(places)} nearby POIs")
+            
+            # Generate the schedule with routing information
+            schedule = await generate_schedule(
+                optimized_places,
+                request.start_time,
+                request.travel_mode,
+                day_overview
+            )
+            
+            return {
+                "schedule": schedule,
+                "location": {
+                    "latitude": request.latitude,
+                    "longitude": request.longitude,
+                    "radius_meters": request.radius_meters
+                },
+                "discovery_stats": {
+                    "nearby_pois_found": len(nearby_pois),
+                    "places_selected": len(optimized_places),
+                    "categories_found": list(set(poi["category"] for poi in nearby_pois))
+                },
+                "generated_from": "public_poi_data"
+            }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating location-based schedule: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate location-based schedule: {str(e)}") 
