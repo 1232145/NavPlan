@@ -18,3 +18,7 @@ AI chat for schedule?
 frontend:
 upon hovering item in search results/saved place, it should highlight in map
 improve routes display
+
+
+generate schedule based on our dataset (put below "Start Exploring" in search result tab)
+public data set will be backend

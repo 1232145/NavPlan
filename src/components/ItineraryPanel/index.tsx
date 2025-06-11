@@ -216,7 +216,7 @@ const FavoritePlacesList: React.FC<{
             <Heart size={28} />
           </div>
           <h3>No Saved Places</h3>
-          <p>Search and add places to build your perfect day. Start exploring to create your custom itinerary!</p>
+          <p>Search and add places to build your perfect day.</p>
         </div>
       ) : (
         results.map(place => (
@@ -335,7 +335,7 @@ const SearchResultsList: React.FC<{
             <Search size={28} />
           </div>
           <h3>Start Exploring</h3>
-          <p>Use the search bar above to discover amazing places for your next adventure. We'll show you the best matches here!</p>
+          <p>Use the search bar above to discover amazing places for your next adventure.</p>
         </div>
       ) : (
         results.map(place => (

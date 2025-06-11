@@ -62,31 +62,13 @@ const SchedulePage: React.FC = () => {
     }
   }, [currentSchedule, navigate]);
 
-  const handleTravelModeChange = async (newMode: string) => {
+  const handleTravelModeChange = (newMode: string) => {
     if (newMode === travelMode || !currentSchedule || currentSchedule.items.length === 0) return;
     
-    try {
-      const startTime = currentSchedule.items[0]?.start_time || "09:00";
-      const placesForUpdate = currentSchedule.items.map(item => ({
-        id: item.place_id,
-        name: item.name,
-        location: item.travel_to_next?.start_location || { lat: 0, lng: 0 },
-        placeType: item.placeType || 'unknown',
-        address: item.address || '',
-        ai_review: item.ai_review || null,
-      }));
-
-      await generateSchedule(
-        startTime,
-        newMode,
-        undefined,
-        placesForUpdate as Place[],
-        currentSchedule.day_overview
-      );
-      setTravelMode(newMode);
-    } catch (error) {
-      console.error("Failed to update schedule with new travel mode:", error);
-    }
+    console.log(`Changing travel mode from ${travelMode} to ${newMode}`);
+    
+    // Simply update the travel mode - the DirectionsMap will handle re-routing
+    setTravelMode(newMode);
   };
 
   if (!currentSchedule) {

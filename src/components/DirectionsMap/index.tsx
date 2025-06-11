@@ -71,24 +71,30 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
   travelMode = "walking"
 }) => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [mapCenter, setMapCenter] = useState<Coordinates>(initialCenter);
   const [mapError, setMapError] = useState<string | null>(null);
   const directionsAttempted = useRef(false);
+  const currentTravelMode = useRef<string>(travelMode);
   const directionsRenderers = useRef<google.maps.DirectionsRenderer[]>([]);
 
-  // Reset directions when travel mode changes or component mounts
+  // Reset directions when travel mode changes
   useEffect(() => {
-    // Clear existing directions renderers
-    directionsRenderers.current.forEach(renderer => {
-      if (renderer) {
-        renderer.setMap(null);
-      }
-    });
-    directionsRenderers.current = [];
-    directionsAttempted.current = false;
+    // Only reset if travel mode actually changed
+    if (currentTravelMode.current !== travelMode) {
+      console.log(`Travel mode changed from ${currentTravelMode.current} to ${travelMode}`);
+      
+      // Clear existing directions renderers
+      directionsRenderers.current.forEach(renderer => {
+        if (renderer) {
+          renderer.setMap(null);
+        }
+      });
+      directionsRenderers.current = [];
+      directionsAttempted.current = false;
+      currentTravelMode.current = travelMode;
+    }
   }, [travelMode]);
 
-  // Create bounds for all locations to fit the map
+  // Create bounds for all locations to fit the map (simplified to reduce re-renders)
   const fitBounds = useCallback(() => {
     if (!map || !schedule || schedule.items.length === 0) {
       return;
@@ -102,39 +108,20 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
         if (item.travel_to_next &&
           item.travel_to_next.start_location &&
           item.travel_to_next.start_location.lat &&
-          item.travel_to_next.start_location.lng) {
-
-          // Skip (0,0) coordinates
-          if (item.travel_to_next.start_location.lat === 0 &&
-            item.travel_to_next.start_location.lng === 0) {
-            return;
-          }
+          item.travel_to_next.start_location.lng &&
+          item.travel_to_next.start_location.lat !== 0 &&
+          item.travel_to_next.start_location.lng !== 0) {
 
           bounds.extend({
             lat: item.travel_to_next.start_location.lat,
             lng: item.travel_to_next.start_location.lng
           });
           addedPoints++;
-
-          // Also include the end location of the last item
-          if (item === schedule.items[schedule.items.length - 1]) {
-            if (item.travel_to_next.end_location &&
-              item.travel_to_next.end_location.lat !== 0 &&
-              item.travel_to_next.end_location.lng !== 0) {
-              bounds.extend({
-                lat: item.travel_to_next.end_location.lat,
-                lng: item.travel_to_next.end_location.lng
-              });
-              addedPoints++;
-            }
-          }
         }
       });
 
       if (addedPoints > 0) {
         map.fitBounds(bounds);
-
-        // Slightly zoom out to give some padding
         setTimeout(() => {
           if (map) {
             const zoom = map.getZoom();
@@ -142,14 +129,14 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
           }
         }, 300);
       } else {
-        map.setCenter(mapCenter);
+        map.setCenter(initialCenter);
         map.setZoom(12);
       }
     } catch (error) {
       console.error("Error in fitBounds:", error);
       setMapError("Error fitting map to bounds");
     }
-  }, [map, schedule, mapCenter]);
+  }, [map, schedule, initialCenter]);
 
   // Handle map load
   const handleMapLoad = useCallback((mapInstance: google.maps.Map) => {
@@ -168,7 +155,12 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
 
   // Function to fetch directions for each route segment
   useEffect(() => {
-    if (!map || !schedule || schedule.items.length < 2 || directionsAttempted.current) {
+    if (!map || !schedule || schedule.items.length < 2) {
+      return;
+    }
+
+    // If this is the same travel mode and we've already attempted directions, skip
+    if (directionsAttempted.current) {
       return;
     }
 
@@ -295,14 +287,47 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
 
       // After all direction requests are processed, fit the map
       Promise.all(requestPromises).then(() => {
-        fitBounds();
+        // Fit bounds without using the callback to avoid dependency issues
+        if (map && schedule && schedule.items.length > 0) {
+          try {
+            const bounds = new window.google.maps.LatLngBounds();
+            let addedPoints = 0;
+
+            schedule.items.forEach(item => {
+              if (item.travel_to_next &&
+                item.travel_to_next.start_location &&
+                item.travel_to_next.start_location.lat &&
+                item.travel_to_next.start_location.lng &&
+                item.travel_to_next.start_location.lat !== 0 &&
+                item.travel_to_next.start_location.lng !== 0) {
+
+                bounds.extend({
+                  lat: item.travel_to_next.start_location.lat,
+                  lng: item.travel_to_next.start_location.lng
+                });
+                addedPoints++;
+              }
+            });
+
+            if (addedPoints > 0) {
+              map.fitBounds(bounds);
+              setTimeout(() => {
+                if (map) {
+                  const zoom = map.getZoom();
+                  if (zoom && zoom > 15) map.setZoom(zoom - 1);
+                }
+              }, 300);
+            }
+          } catch (error) {
+            console.error("Error fitting bounds after directions:", error);
+          }
+        }
       });
     } catch (error) {
       console.error("Error setting up directions:", error);
       setMapError("Error generating directions");
-      fitBounds();
     }
-  }, [map, schedule, fitBounds, travelMode]);
+  }, [map, schedule, travelMode]);
 
   // Helper function to convert string travel mode to Google Maps travel mode
   const getTravelMode = (mode: string): google.maps.TravelMode => {
@@ -343,8 +368,8 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
         </div>
       )}
       <Map
-        mapCenter={mapCenter}
-        setMapCenter={setMapCenter}
+        mapCenter={initialCenter}
+        setMapCenter={() => {}} // No-op since we don't need to update center
         onMapLoad={handleMapLoad}
         className="directions-map"
         zoom={12}

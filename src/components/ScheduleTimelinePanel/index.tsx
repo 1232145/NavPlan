@@ -84,7 +84,7 @@ const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({ travelMod
             </div>
             <div className="schedule-place-details">
               <h3>
-                <span className="place-number" style={{ backgroundColor: markerColors[index % markerColors.length] }}>
+                <span className="schedule-place-number" style={{ backgroundColor: markerColors[index % markerColors.length] }}>
                   {index + 1}
                 </span>
                 {item.name}
@@ -101,8 +101,8 @@ const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({ travelMod
               </div>
               {item.ai_review && (
                 <div className="place-ai-review">
-                  <span className="ai-icon">💡</span>
-                  <span>{item.ai_review}</span>
+                  <span className="ai-icon">🤖</span>
+                  <span><strong>AI Insight:</strong> {item.ai_review}</span>
                 </div>
               )}
             </div>

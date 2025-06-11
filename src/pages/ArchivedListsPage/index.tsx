@@ -5,6 +5,7 @@ import { Button } from '../../components/Button';
 import { useNavigate } from 'react-router-dom';
 import { ArchivedList, Place } from '../../types';
 import { archivedListService } from '../../services/archivedListService';
+import CategoryFilter from '../../components/CategoryFilter';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -74,6 +75,35 @@ const getCategoryCounts = (places: Place[]) => {
   return categories;
 };
 
+// Helper to categorize a place
+const categorizePlaceType = (placeType: string): string => {
+  const type = placeType.toLowerCase();
+  if (type.includes('restaurant') || type.includes('food')) {
+    return 'food';
+  } else if (type.includes('cafe') || type.includes('coffee')) {
+    return 'cafe';
+  } else if (type.includes('museum') || type.includes('gallery') || type.includes('attraction')) {
+    return 'attraction';
+  } else if (type.includes('park') || type.includes('garden')) {
+    return 'outdoor';
+  } else if (type.includes('store') || type.includes('shop') || type.includes('mall')) {
+    return 'shopping';
+  }
+  return 'other';
+};
+
+// Helper to filter places by selected categories
+const filterPlacesByCategories = (places: Place[], selectedCategories: string[]): Place[] => {
+  if (selectedCategories.length === 0) {
+    return []; // No categories selected means no places
+  }
+  
+  return places.filter(place => {
+    const category = categorizePlaceType(place.placeType);
+    return selectedCategories.includes(category);
+  });
+};
+
 const ArchivedListsPage: React.FC = () => {
   const { generateSchedule } = useAppContext();
   const [archivedLists, setArchivedLists] = useState<ArchivedList[]>([]);
@@ -88,6 +118,7 @@ const ArchivedListsPage: React.FC = () => {
   const [endTime, setEndTime] = useState('19:00');
   const [prompt, setPrompt] = useState('');
   const [selectedList, setSelectedList] = useState<ArchivedList | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(['food', 'cafe', 'attraction', 'outdoor', 'shopping', 'other']);
 
   useEffect(() => {
     fetchArchivedLists();
@@ -108,7 +139,21 @@ const ArchivedListsPage: React.FC = () => {
   };
 
   const handleGenerateSchedule = (list: ArchivedList) => {
-    setSelectedList(list);
+    // Filter the list's places based on selected categories before setting
+    const filteredPlaces = filterPlacesByCategories(list.places, selectedCategories);
+    
+    if (filteredPlaces.length === 0) {
+      alert('No places match your selected categories. Please select at least one category to generate a schedule.');
+      return;
+    }
+    
+    // Create a filtered version of the list
+    const filteredList = {
+      ...list,
+      places: filteredPlaces
+    };
+    
+    setSelectedList(filteredList);
     setScheduleOpen(true);
   };
 
@@ -116,6 +161,7 @@ const ArchivedListsPage: React.FC = () => {
     setScheduleOpen(false);
     setSelectedList(null);
     setPrompt('');
+    setSelectedCategories(['food', 'cafe', 'attraction', 'outdoor', 'shopping', 'other']); // Reset to all categories
   };
 
   const handleScheduleConfirm = async () => {
@@ -208,7 +254,7 @@ const ArchivedListsPage: React.FC = () => {
                 multiline
                 rows={3}
                 fullWidth
-                placeholder="E.g., 'Focus on outdoor activities' or 'Include more food stops'"
+                placeholder="E.g., 'I like family restaurants and outdoor activities' or 'Focus on cultural attractions and cafes'"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 margin="dense"
@@ -244,9 +290,27 @@ const ArchivedListsPage: React.FC = () => {
             </Button>
           </div>
         ) : (
-          <div className="archived-list-container">
-            {archivedLists.map(list => {
-              const categoryCounts = getCategoryCounts(list.places);
+          <>
+            <div className="archived-lists-filters">
+              <CategoryFilter
+                selectedCategories={selectedCategories}
+                onCategoryChange={setSelectedCategories}
+                title="Filter Places by Category"
+                size="md"
+                defaultExpanded={false}
+              />
+            </div>
+            
+            <div className="archived-list-container">
+              {archivedLists.map(list => {
+                // Filter places in this list based on selected categories
+                const filteredPlaces = filterPlacesByCategories(list.places, selectedCategories);
+                const categoryCounts = getCategoryCounts(filteredPlaces);
+                
+                // Don't show lists that have no places after filtering
+                if (filteredPlaces.length === 0) {
+                  return null;
+                }
               
               return (
                 <div key={list.id} className={`archived-list-card ${expanded.includes(list.id) ? 'expanded' : ''}`}>
@@ -268,7 +332,7 @@ const ArchivedListsPage: React.FC = () => {
                         <div className="archived-list-name-row">
                           <h3 className="archived-list-name">{list.name}</h3>
                           <div className="archived-list-badge">
-                            {list.places.length} {list.places.length === 1 ? 'place' : 'places'}
+                            {filteredPlaces.length} {filteredPlaces.length === 1 ? 'place' : 'places'}
                           </div>
                         </div>
                         <div className="archived-list-details">
@@ -327,17 +391,17 @@ const ArchivedListsPage: React.FC = () => {
                       
 
                       
-                      {list.places.length === 0 ? (
-                        <div className="archived-list-empty">No places in this list.</div>
+                      {filteredPlaces.length === 0 ? (
+                        <div className="archived-list-empty">No places match the selected categories.</div>
                       ) : (
                         <div className="archived-places-grid">
-                          {list.places.map((place, index) => (
+                          {filteredPlaces.map((place, index) => (
                             <div key={place.id} className="archived-place-card">
-                              <div className="place-number">{index + 1}</div>
-                              <div className="place-content">
-                                <div className="place-header">
+                              <div className="archived-place-number">{index + 1}</div>
+                              <div className="archived-place-content">
+                                <div className="archived-place-header">
                                   <h4 className="archived-place-name">{place.name}</h4>
-                                  <div className="place-type-badge">
+                                  <div className="archived-place-type-badge">
                                     {getPlaceTypeIcon(place.placeType)}
                                     <span>{place.placeType.replace(/_/g, ' ')}</span>
                                   </div>
@@ -348,17 +412,17 @@ const ArchivedListsPage: React.FC = () => {
                                 </div>
                                 {place.note && (
                                   <div className="archived-place-note">
-                                    <span className="place-note-label">Note:</span> <span className="place-note-content">"{place.note}"</span>
+                                    <span className="archived-place-note-label">Note:</span> <span className="archived-place-note-content">"{place.note}"</span>
                                   </div>
                                 )}
                                 {place.rating && (
-                                  <div className="place-rating">
-                                    <span className="stars">
+                                  <div className="archived-place-rating">
+                                    <span className="archived-place-stars">
                                       {'★'.repeat(Math.floor(place.rating))}
                                       {place.rating % 1 >= 0.5 ? '½' : ''}
                                       {'☆'.repeat(5 - Math.ceil(place.rating))}
                                     </span>
-                                    <span className="rating-text">
+                                    <span className="archived-place-rating-text">
                                       {place.rating.toFixed(1)}
                                       {place.userRatingCount ? ` (${place.userRatingCount})` : ''}
                                     </span>
@@ -374,7 +438,8 @@ const ArchivedListsPage: React.FC = () => {
                 </div>
               );
             })}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>
