@@ -19,7 +19,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import DirectionsMap from '../../components/DirectionsMap';
-import { Place } from '../../types';
 import ScheduleTimelinePanel from '../../components/ScheduleTimelinePanel';
 import NavbarColumn from '../../components/NavbarColumn';
 import './index.css';
@@ -36,19 +35,21 @@ const TRAVEL_MODES = [
 ];
 
 const SchedulePage: React.FC = () => {
-  const { currentSchedule, favoritePlaces, generateSchedule } = useAppContext();
+  const { currentSchedule, favoritePlaces } = useAppContext();
   const navigate = useNavigate();
   const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [travelMode, setTravelMode] = useState("walking");
 
-  // Set initial map center based on first place
+  // Redirect to map if no schedule
   useEffect(() => {
     if (!currentSchedule) {
       navigate('/map');
-      return;
     }
+  }, [currentSchedule, navigate]);
 
-    if (currentSchedule.items.length > 0) {
+  // Set initial map center based on first place
+  useEffect(() => {
+    if (currentSchedule && currentSchedule.items.length > 0) {
       const firstItem = currentSchedule.items[0];
       if (firstItem && firstItem.travel_to_next &&
         firstItem.travel_to_next.start_location &&
@@ -60,16 +61,16 @@ const SchedulePage: React.FC = () => {
         });
       }
     }
-  }, [currentSchedule, navigate]);
+  }, [currentSchedule]);
 
   const handleTravelModeChange = (newMode: string) => {
     if (newMode === travelMode || !currentSchedule || currentSchedule.items.length === 0) return;
     
-    console.log(`Changing travel mode from ${travelMode} to ${newMode}`);
-    
     // Simply update the travel mode - the DirectionsMap will handle re-routing
     setTravelMode(newMode);
   };
+
+
 
   if (!currentSchedule) {
     return null;
