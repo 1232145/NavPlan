@@ -11,7 +11,7 @@ type NavbarColumnProps = Record<string, never>; // Empty props type
 const NavbarColumn: React.FC<NavbarColumnProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setUser } = useAppContext();
+  const { setUser, user } = useAppContext();
 
   const handleMyListsClick = () => {
     navigate('/lists');
@@ -91,6 +91,15 @@ const NavbarColumn: React.FC<NavbarColumnProps> = () => {
       
       <div className="navbar-footer">
         <div className="menu-item logout" onClick={handleSignOut}>
+          {user?.picture && (
+            <div className="navbar-avatar-inline">
+              <img 
+                src={user.picture} 
+                alt={user.name || 'User avatar'} 
+                className="navbar-avatar-image-inline"
+              />
+            </div>
+          )}
           <LogOut size={20} />
           <span>Sign Out</span>
           <div className="menu-item-glow"></div>

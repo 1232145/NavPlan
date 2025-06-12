@@ -6,7 +6,8 @@
  * Features:
  * - Displays search results and favorite places
  * - Handles tab switching between saved and search views
- * - Manages marker interactions and info windows
+ * - Manages marker hover interactions and info windows (like Google Maps)
+ * - Smooth hover behavior with delay to allow mouse movement between marker and InfoWindow
  * - Fits map bounds to visible markers
  * - Communicates with other components via custom events
  * 
@@ -42,8 +43,10 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
 }) => {
   const { favoritePlaces, addFavoritePlace, searchResults } = useAppContext();
   const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [hoveredPlace, setHoveredPlace] = useState<Place | null>(null);
+  const [hoveredPlaceId, setHoveredPlaceId] = useState<string | null>(null);
   const markerClickedRef = useRef(false);
+  const hideTimeoutRef = useRef<number | null>(null);
 
   // Helper to fit map to all result markers
   const fitMapToPlaces = (places: Place[]) => {
@@ -70,10 +73,34 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
     };
   }, [map]);
 
+  // Listen for place hover events
+  useEffect(() => {
+    const handlePlaceHover = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { placeId, hovering } = customEvent.detail || {};
+      console.log('Hover event received:', placeId, hovering);
+      setHoveredPlaceId(hovering ? placeId : null);
+    };
+    
+    window.addEventListener('place-hover', handlePlaceHover);
+    return () => {
+      window.removeEventListener('place-hover', handlePlaceHover);
+    };
+  }, []);
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handleAddToFavorites = () => {
-    if (selectedPlace) {
-      addFavoritePlace(selectedPlace);
-      setSelectedPlace(null);
+    if (hoveredPlace) {
+      addFavoritePlace(hoveredPlace);
+      setHoveredPlace(null);
     }
   };
 
@@ -91,7 +118,6 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
     }
   };
 
-
   // Listen for tab changes from ItineraryPanel
   useEffect(() => {
     window.addEventListener('itinerary-tab-changed', handleTabChange);
@@ -106,19 +132,61 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
       markerClickedRef.current = false;
       return;
     }
-    setSelectedPlace(null);
+    // Clear any pending hide timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+    setHoveredPlace(null);
     window.dispatchEvent(new CustomEvent('clear-selected-place'));
-  }, [setSelectedPlace]);
+  }, []);
 
   // Map load handler
   const handleMapLoad = useCallback((mapInstance: google.maps.Map) => {
     setMap(mapInstance);
   }, []);
 
-  // Handle marker click
+  // Handle marker hover with improved UX
+  const handleMarkerHover = (place: Place | null) => {
+    // Clear any existing timeout
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+
+    if (place) {
+      // Show InfoWindow immediately on hover
+      setHoveredPlace(place);
+    } else {
+      // Delay hiding InfoWindow to allow mouse movement to InfoWindow
+      hideTimeoutRef.current = setTimeout(() => {
+        setHoveredPlace(null);
+        hideTimeoutRef.current = null;
+      }, 100); // 100ms delay - adjust as needed
+    }
+  };
+
+  // Handle InfoWindow hover to keep it visible
+  const handleInfoWindowMouseEnter = () => {
+    // Clear hide timeout when mouse enters InfoWindow
+    if (hideTimeoutRef.current) {
+      clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  };
+
+  const handleInfoWindowMouseLeave = () => {
+    // Hide InfoWindow when mouse leaves InfoWindow
+    hideTimeoutRef.current = setTimeout(() => {
+      setHoveredPlace(null);
+      hideTimeoutRef.current = null;
+    }, 100);
+  };
+
+  // Handle marker click (optional additional functionality)
   const handleMarkerClick = (place: Place, tab: 'saved' | 'search') => {
     markerClickedRef.current = true;
-    setSelectedPlace(place);
+    // On click, we can pan and zoom to the place for better focus
     if (map) {
       map.panTo(place.location);
       map.setZoom(16);
@@ -139,7 +207,9 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
           key={`fav-${place.id}`}
           place={place}
           markerType="favorite"
+          onHover={handleMarkerHover}
           onClick={(p) => handleMarkerClick(p, 'saved')}
+          isHighlighted={hoveredPlaceId === place.id}
         />
       ))}
 
@@ -147,19 +217,25 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
         <MapMarker
           key={`search-${place.id}`}
           place={place}
+          onHover={handleMarkerHover}
           onClick={(p) => handleMarkerClick(p, 'search')}
+          isHighlighted={hoveredPlaceId === place.id}
         />
       ))}
 
-      {/* Render info window for selected place */}
-      {selectedPlace && (
-        <MapInfoWindow
-          place={selectedPlace}
-          position={selectedPlace.location}
-          onClose={() => setSelectedPlace(null)}
-          onAddToFavorites={handleAddToFavorites}
-          showAddButton={activeTab === 'search'}
-        />
+      {/* Render info window for hovered place */}
+      {hoveredPlace && (
+        <div
+          onMouseEnter={handleInfoWindowMouseEnter}
+          onMouseLeave={handleInfoWindowMouseLeave}
+        >
+          <MapInfoWindow
+            place={hoveredPlace}
+            position={hoveredPlace.location}
+            onAddToFavorites={handleAddToFavorites}
+            showAddButton={activeTab === 'search'}
+          />
+        </div>
       )}
     </Map>
   );

@@ -4,7 +4,7 @@
  * A reusable info window component for Google Maps that displays place details.
  * 
  * Features:
- * - Displays place details including name, address, photos, and ratings
+ * - Displays place details including name, photos, and ratings
  * - Handles image loading errors gracefully
  * - Optional "Add to Favorites" button
  * - Consistent styling with the application
@@ -29,7 +29,6 @@ import './index.css';
 export interface MapInfoWindowProps {
   place: Place;
   position: google.maps.LatLng | google.maps.LatLngLiteral;
-  onClose: () => void;
   onAddToFavorites?: () => void;
   showAddButton?: boolean;
 }
@@ -37,19 +36,42 @@ export interface MapInfoWindowProps {
 const MapInfoWindow: React.FC<MapInfoWindowProps> = ({ 
   place, 
   position, 
-  onClose, 
   onAddToFavorites,
   showAddButton = false
 }) => {
   const [imageError, setImageError] = useState(false);
   
+  // Helper function to get opening hours display text
+  const getOpeningHoursDisplay = () => {
+    if (!place.openingHours) return null;
+    
+    const isOpen = place.openingHours.open;
+    const baseStyle = { fontSize: 13, fontWeight: 500 };
+    
+    if (isOpen) {
+      return (
+        <p style={{ ...baseStyle, color: '#2ecc40', margin: '5px 0' }}>
+          ● Open now
+        </p>
+      );
+    } else {
+      return (
+        <p style={{ ...baseStyle, color: '#ff4136', margin: '5px 0' }}>
+          ● Closed now
+        </p>
+      );
+    }
+  };
+  
   return (
     <InfoWindow
       position={position}
-      onCloseClick={onClose}
+      options={{
+        pixelOffset: new window.google.maps.Size(0, -20),
+        disableAutoPan: true
+      }}
     >
       <div className="map-info-window">
-        <h3>{place.name}</h3>
         {place.photos && place.photos.length > 0 && !imageError ? (
           <div className="info-window-image-container">
             <img 
@@ -64,19 +86,13 @@ const MapInfoWindow: React.FC<MapInfoWindowProps> = ({
             <span>{place.name}</span>
           </div>
         )}
-        <p>{place.address}</p>
+        <h3>{place.name}</h3>
         {place.rating && (
-          <p>Rating: {place.rating} ({place.userRatingCount || 0} reviews)</p>
+          <p style={{ margin: '5px 0', fontSize: 14, color: '#f7b500', fontWeight: 600 }}>
+            ★ {place.rating} ({place.userRatingCount || 0})
+          </p>
         )}
-        {place.openingHours && (
-          <p>Currently: {place.openingHours.open ? 'Open' : 'Closed'}</p>
-        )}
-        {place.website && (
-          <p><a href={place.website} target="_blank" rel="noopener noreferrer">Website</a></p>
-        )}
-        {place.phoneNumber && (
-          <p>Phone: {place.phoneNumber}</p>
-        )}
+        {getOpeningHoursDisplay()}
         {place.note && (
           <p>Note: {place.note}</p>
         )}

@@ -239,6 +239,26 @@
   border-top: 1px solid rgba(148, 163, 184, 0.15);
 }
 
+/* Navbar User Section Styles */
+.navbar-avatar-inline {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.navbar-avatar-image-inline {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
 .menu-item.logout {
   color: #64748b;
   background: rgba(239, 68, 68, 0.05);
@@ -254,6 +274,12 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
+.menu-item.logout:hover .navbar-avatar-inline {
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.2);
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .navbar-column {
@@ -267,5 +293,17 @@
   .menu-item {
     padding: 14px 16px;
     font-size: 0.9rem;
+  }
+  
+  .navbar-avatar-inline {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .navbar-avatar-image-inline {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
   }
 } 

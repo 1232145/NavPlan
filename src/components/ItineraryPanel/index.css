@@ -29,12 +29,6 @@
   z-index: 1;
 }
 
-.itinerary-panel:hover {
-  background: var(--color-surface-elevated);
-  box-shadow: var(--shadow-xl);
-  transform: translateY(-2px);
-}
-
 /* Enhanced Header */
 .panel-header {
   padding: var(--space-6);
@@ -346,6 +340,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   box-shadow: var(--shadow-sm);
+  z-index: 4;
 }
 
 /* Settings section */

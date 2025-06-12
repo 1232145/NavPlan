@@ -83,7 +83,8 @@ const FavoritePlacesList: React.FC<{
   selectedPlace: Place | null; 
   clearAllFavorites: () => void; 
   archiveFavorites: (name?: string, note?: string) => void; 
-}> = ({ favoritePlaces, removeFavoritePlace, selectedPlace, clearAllFavorites, archiveFavorites }) => {
+  setActiveTab: (tab: 'saved' | 'search') => void;
+}> = ({ favoritePlaces, removeFavoritePlace, selectedPlace, clearAllFavorites, archiveFavorites, setActiveTab }) => {
   let results = favoritePlaces;
   let selected = null;
   if (selectedPlace && favoritePlaces.some(p => p.id === selectedPlace.id)) {
@@ -113,7 +114,14 @@ const FavoritePlacesList: React.FC<{
       setArchiveOpen(false);
       setArchiveName('');
       setArchiveNote('');
-      setShowSuccessMessage(true);
+      
+      // Switch to search tab immediately to show that saved places are cleared
+      setActiveTab('search');
+      
+      // Show success message after switching tabs
+      setTimeout(() => {
+        setShowSuccessMessage(true);
+      }, 100);
       
       // Hide success message after 5 seconds
       setTimeout(() => {
@@ -384,6 +392,7 @@ const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) 
               selectedPlace={selectedPlace} 
               clearAllFavorites={clearAllFavorites} 
               archiveFavorites={archiveFavorites} 
+              setActiveTab={setActiveTab} 
             />
           : <SearchResultsList 
               searchResults={searchResults} 

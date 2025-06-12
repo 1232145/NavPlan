@@ -38,13 +38,31 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, o
     }
   };
 
+  // Handle hover for map marker highlighting
+  const handleMouseEnter = () => {
+    window.dispatchEvent(new CustomEvent('place-hover', { 
+      detail: { placeId: place.id, hovering: true } 
+    }));
+  };
+
+  const handleMouseLeave = () => {
+    window.dispatchEvent(new CustomEvent('place-hover', { 
+      detail: { placeId: place.id, hovering: false } 
+    }));
+  };
+
   // Note display logic
   const MAX_NOTE_PREVIEW = 120;
   const hasLongNote = place.note && place.note.length > MAX_NOTE_PREVIEW;
   const noteToShow = showFullNote || !hasLongNote ? place.note : place.note?.slice(0, MAX_NOTE_PREVIEW) + '...';
 
   return (
-    <div className="place-card" ref={cardRef}>
+    <div 
+      className="place-card" 
+      ref={cardRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
       {place.photos && place.photos.length > 0 && !imageError ? (
         <img
           src={place.photos[0]}
