@@ -72,6 +72,7 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
 }) => {
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [directionsLoaded, setDirectionsLoaded] = useState(false); // Custom marker won't appear (won't re-render) so we need to track this, will fix in the future
   const directionsAttempted = useRef(false);
   const currentTravelMode = useRef<string>(travelMode);
   const directionsRenderers = useRef<google.maps.DirectionsRenderer[]>([]);
@@ -89,6 +90,7 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
       });
       directionsRenderers.current = [];
       directionsAttempted.current = false;
+      setDirectionsLoaded(false);
       currentTravelMode.current = travelMode;
     }
   }, [travelMode]);
@@ -146,6 +148,7 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
 
     // Reset directionsAttempted to ensure initial route is generated
     directionsAttempted.current = false;
+    setDirectionsLoaded(false);
 
     setTimeout(() => {
       fitBounds();
@@ -303,6 +306,8 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
 
       // After all direction requests are processed, fit the map
       Promise.all(requestPromises).then(() => {
+        // Set directions as loaded to trigger marker re-render
+        setDirectionsLoaded(true);
         // Fit bounds without using the callback to avoid dependency issues
         if (map && schedule && schedule.items.length > 0) {
           try {
@@ -394,7 +399,7 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
         {/* Display markers for each place in the schedule */}
         {schedulePlaces.map((place, index) => (
           <MapMarker
-            key={`schedule-${place.id}-${index}-${directionsRenderers.current.length > 0 ? 'with-dir' : 'no-dir'}`}
+            key={`schedule-${place.id}-${index}-${directionsLoaded ? 'directions-loaded' : 'directions-loading'}`}
             place={place}
             markerType="schedule"
             index={index}
