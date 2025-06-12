@@ -80,7 +80,6 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
   useEffect(() => {
     // Only reset if travel mode actually changed
     if (currentTravelMode.current !== travelMode) {
-      console.log(`Travel mode changed from ${currentTravelMode.current} to ${travelMode}`);
       
       // Clear existing directions renderers
       directionsRenderers.current.forEach(renderer => {
@@ -248,7 +247,7 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
             travelMode: getTravelMode(travelMode),
             optimizeWaypoints: false
           }, (result, status) => {
-            if (status === window.google.maps.DirectionsStatus.OK) {
+            if (status === window.google.maps.DirectionsStatus.OK && result) {
               // Create a directions renderer for this segment
               const renderer = new window.google.maps.DirectionsRenderer({
                 suppressMarkers: true,
@@ -276,7 +275,24 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
               renderer.setDirections(result);
               directionsRenderers.current.push(renderer);
             } else {
-              console.error(`Directions request failed for segment ${i}: ${status}`);
+              const errorDetails = {
+                segment: i,
+                status: status,
+                origin: `${currentStartLocation.lat.toFixed(6)}, ${currentStartLocation.lng.toFixed(6)}`,
+                destination: `${nextStartLocation.lat.toFixed(6)}, ${nextStartLocation.lng.toFixed(6)}`,
+                travelMode: travelMode
+              };
+              
+              console.error(`Directions request failed for segment ${i}:`, errorDetails);
+              
+              // Show user-friendly error only for certain cases
+              if (status === window.google.maps.DirectionsStatus.ZERO_RESULTS) {
+                console.warn(`No route found between locations. This might be due to invalid coordinates or unreachable destinations.`);
+              } else if (status === window.google.maps.DirectionsStatus.OVER_QUERY_LIMIT) {
+                setMapError("Google Maps quota exceeded. Please try again later.");
+              } else if (status === window.google.maps.DirectionsStatus.REQUEST_DENIED) {
+                setMapError("Google Maps API access denied. Please check API key configuration.");
+              }
             }
             resolve();
           });

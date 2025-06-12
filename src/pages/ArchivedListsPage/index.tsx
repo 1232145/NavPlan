@@ -6,18 +6,12 @@ import { useNavigate } from 'react-router-dom';
 import { ArchivedList, Place } from '../../types';
 import { archivedListService } from '../../services/archivedListService';
 import CategoryFilter from '../../components/CategoryFilter';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import TextField from '@mui/material/TextField';
+import ScheduleGenerationDialog, { ScheduleGenerationOptions } from '../../components/ScheduleGenerationDialog';
 import LoadingScreen from '../../components/LoadingScreen';
 import NavbarColumn from '../../components/NavbarColumn';
 import { 
   Map, 
   Calendar, 
-  Clock, 
-  ListChecks, 
   Navigation, 
   MapPin, 
   Info, 
@@ -114,9 +108,6 @@ const ArchivedListsPage: React.FC = () => {
   
   // Schedule modal state for choosing start time
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('19:00');
-  const [prompt, setPrompt] = useState('');
   const [selectedList, setSelectedList] = useState<ArchivedList | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['food', 'cafe', 'attraction', 'outdoor', 'shopping', 'other']);
 
@@ -160,11 +151,10 @@ const ArchivedListsPage: React.FC = () => {
   const handleScheduleClose = () => {
     setScheduleOpen(false);
     setSelectedList(null);
-    setPrompt('');
     setSelectedCategories(['food', 'cafe', 'attraction', 'outdoor', 'shopping', 'other']); // Reset to all categories
   };
 
-  const handleScheduleConfirm = async () => {
+  const handleScheduleConfirm = async (options: ScheduleGenerationOptions) => {
     // Move focus to a safe element before navigation
     document.body.focus();
     // Close the modal first to avoid aria-hidden issues
@@ -174,13 +164,13 @@ const ArchivedListsPage: React.FC = () => {
     setTimeout(async () => {
       if (selectedList) {
         await generateSchedule(
-          startTime, 
+          options.startTime, 
           "walking", 
-          prompt, 
+          options.prompt, 
           selectedList.places, 
           undefined, 
           selectedList.places.length,
-          endTime
+          options.endTime
         );
         navigate('/schedule');
       }
@@ -207,79 +197,14 @@ const ArchivedListsPage: React.FC = () => {
     <div className="archived-page-layout">
       <NavbarColumn />
       <div className="archived-lists-content">
-        {/* Schedule Modal */}
-        <Dialog 
-          open={scheduleOpen} 
-          onClose={handleScheduleClose} 
-          maxWidth="sm" 
-          fullWidth
-          aria-labelledby="schedule-dialog-title"
-        >
-          <DialogTitle id="schedule-dialog-title">
-          </DialogTitle>
-          <DialogContent>
-            <div className="schedule-dialog-content">
-              <p className="schedule-dialog-label">
-                <Clock size={16} /> Set your schedule time range:
-              </p>
-              <div className="time-inputs-container">
-                <div className="time-input-group">
-                  <p>Start time:</p>
-                  <TextField
-                    type="time"
-                    fullWidth
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                    margin="dense"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </div>
-                <div className="time-input-group">
-                  <p>End time:</p>
-                  <TextField
-                    type="time"
-                    fullWidth
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                    margin="dense"
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </div>
-              </div>
-              
-              <p className="schedule-dialog-label">
-                <Info size={16} /> Custom preferences (optional):
-              </p>
-              <TextField
-                multiline
-                rows={3}
-                fullWidth
-                placeholder="E.g., 'I like family restaurants and outdoor activities' or 'Focus on cultural attractions and cafes'"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                margin="dense"
-              />
-
-              <div className="schedule-summary-info">
-                <div className="schedule-summary-icon"><ListChecks size={16} /></div>
-                <p>
-                  Generating a schedule for <strong>{selectedList?.places.length || 0} places</strong>.
-                  Our AI will optimize your day based on locations and preferences.
-                </p>
-              </div>
-            </div>
-          </DialogContent>
-          <DialogActions className="schedule-dialog-actions">
-            <Button variant="default" size="sm" onClick={handleScheduleClose}>Cancel</Button>
-            <Button 
-              variant="primary" 
-              size="sm" 
-              onClick={handleScheduleConfirm}
-            >
-              Generate Schedule
-            </Button>
-          </DialogActions>
-        </Dialog>
+        {/* Schedule Generation Dialog */}
+        <ScheduleGenerationDialog
+          open={scheduleOpen}
+          onClose={handleScheduleClose}
+          onConfirm={handleScheduleConfirm}
+          title="Generate Schedule"
+          placeCount={selectedList?.places.length}
+        />
         
         {archivedLists.length === 0 ? (
           <div className="archived-empty">

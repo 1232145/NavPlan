@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { Place } from '../../types';
 import './index.css';
 import { PlaceCard } from '../../components/PlaceCard';
 import { Button } from '../../components/Button';
+import ScheduleGenerationDialog, { ScheduleGenerationOptions } from '../ScheduleGenerationDialog';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -16,7 +18,9 @@ import {
   Trash2, 
   Plus, 
   CheckCircle,
-  ArrowRight
+  ArrowRight,
+  MapPin,
+  Sparkles
 } from 'lucide-react';
 
 export interface TabControlProps {
@@ -235,6 +239,175 @@ const FavoritePlacesList: React.FC<{
   );
 };
 
+const LocationBasedExploration: React.FC = () => {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [locationStatus, setLocationStatus] = useState<string>('');
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const { generateLocationBasedSchedule } = useAppContext();
+  const navigate = useNavigate();
+
+  const handleGenerateFromLocation = async () => {
+    setIsGenerating(true);
+    setLocationStatus('Requesting location permission...');
+    
+    try {
+      // Check if geolocation is supported
+      if (!navigator.geolocation) {
+        setLocationStatus('Geolocation is not supported by this browser.');
+        setIsGenerating(false);
+        return;
+      }
+
+      // Check if we're on HTTPS (required for geolocation in production)
+      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+        setLocationStatus('Location access requires HTTPS. Please use a secure connection.');
+        setIsGenerating(false);
+        return;
+      }
+
+      setLocationStatus('Please allow location access when prompted...');
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            setLocationStatus('Location found! Please choose your schedule preferences...');
+            
+            // Store location and open schedule dialog
+            setCurrentLocation({ latitude, longitude });
+            setIsGenerating(false);
+            setLocationStatus('');
+            setScheduleDialogOpen(true);
+            
+          } catch (error) {
+            console.error('Error processing location:', error);
+            setLocationStatus('Failed to process location. Please try again.');
+            setTimeout(() => {
+              setIsGenerating(false);
+              setLocationStatus('');
+            }, 3000);
+          }
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          let errorMessage = '';
+          
+          switch (error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'Location access was denied. Please enable location permissions in your browser settings and try again.';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'Location information is unavailable. Please check your device settings.';
+              break;
+            case error.TIMEOUT:
+              errorMessage = 'Location request timed out. Please try again.';
+              break;
+            default:
+              errorMessage = 'An unknown error occurred while retrieving location.';
+              break;
+          }
+          
+          setLocationStatus(errorMessage);
+          setTimeout(() => {
+            setIsGenerating(false);
+            setLocationStatus('');
+          }, 5000);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 300000 // 5 minutes
+        }
+      );
+    } catch (error) {
+      console.error('Location error:', error);
+      setLocationStatus('Failed to access location services.');
+      setTimeout(() => {
+        setIsGenerating(false);
+        setLocationStatus('');
+      }, 3000);
+    }
+  };
+
+  const handleScheduleDialogClose = () => {
+    setScheduleDialogOpen(false);
+    setCurrentLocation(null);
+  };
+
+  const handleScheduleDialogConfirm = async (options: ScheduleGenerationOptions) => {
+    if (!currentLocation) return;
+    
+    try {
+      setScheduleDialogOpen(false);
+      
+      // Generate location-based schedule with user preferences
+      await generateLocationBasedSchedule(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        {
+          radius_meters: 5000,
+          travel_mode: "walking",
+          start_time: options.startTime,
+          end_time: options.endTime,
+          prompt: options.prompt
+        }
+      );
+      
+      // Navigate to schedule page
+      navigate('/schedule');
+      
+    } catch (error) {
+      console.error('Failed to generate location-based schedule:', error);
+      setLocationStatus('Failed to generate schedule. Please try again.');
+      setTimeout(() => {
+        setLocationStatus('');
+      }, 5000);
+    } finally {
+      setCurrentLocation(null);
+    }
+  };
+
+  return (
+    <>
+      <div className="location-exploration">
+        <div className="location-exploration-icon">
+          <Sparkles size={28} />
+        </div>
+        <h3>No place in mind?</h3>
+        <p>Let AI discover amazing places near you and create the perfect day schedule.</p>
+        
+        {locationStatus && (
+          <div className="location-status">
+            <p>{locationStatus}</p>
+          </div>
+        )}
+        
+        <Button 
+          variant="primary" 
+          size="md" 
+          onClick={handleGenerateFromLocation}
+          disabled={isGenerating}
+          className="location-exploration-button"
+        >
+          <MapPin size={16} />
+          {isGenerating ? 'Getting your location...' : 'Try AI Recommendations'}
+        </Button>
+      </div>
+
+      {/* Schedule Generation Dialog */}
+      <ScheduleGenerationDialog
+        open={scheduleDialogOpen}
+        onClose={handleScheduleDialogClose}
+        onConfirm={handleScheduleDialogConfirm}
+        title="AI Recommendations Setup"
+        description="AI will discover amazing places near your location and create an optimized schedule."
+        isLocationBased={true}
+      />
+    </>
+  );
+};
+
 const SearchResultsList: React.FC<{ 
   searchResults: Place[]; 
   selectedPlace: Place | null; 
@@ -338,13 +511,17 @@ const SearchResultsList: React.FC<{
       )}
       
       {searchResults.length === 0 && !selected ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">
-            <Search size={28} />
+        <>
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <Search size={28} />
+            </div>
+            <h3>Start Exploring</h3>
+            <p>Use the search bar above to discover amazing places for your next adventure.</p>
           </div>
-          <h3>Start Exploring</h3>
-          <p>Use the search bar above to discover amazing places for your next adventure.</p>
-        </div>
+          
+          <LocationBasedExploration />
+        </>
       ) : (
         results.map(place => (
           <PlaceCard 
