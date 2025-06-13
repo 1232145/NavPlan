@@ -62,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({ onMyListsClick, onLogoClick }) => {
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', alignItems: 'center' }}>
           <Button variant="primary" size="md" onClick={handleGoToMap}>
-            Go to Map
+            Explore map
           </Button>
           <Button variant="primary" size="md" onClick={onMyListsClick}>
             Generate Schedule

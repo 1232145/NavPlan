@@ -343,9 +343,9 @@ const ArchivedListsPage: React.FC = () => {
                                 {place.rating && (
                                   <div className="archived-place-rating">
                                     <span className="archived-place-stars">
-                                      {'★'.repeat(Math.floor(place.rating))}
-                                      {place.rating % 1 >= 0.5 ? '½' : ''}
-                                      {'☆'.repeat(5 - Math.ceil(place.rating))}
+                                      {Array.from({ length: 5 }, (_, i) => 
+                                        i < Math.floor(place.rating!) ? '★' : '☆'
+                                      ).join('')}
                                     </span>
                                     <span className="archived-place-rating-text">
                                       {place.rating.toFixed(1)}

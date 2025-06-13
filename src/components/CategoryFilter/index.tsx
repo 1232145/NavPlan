@@ -6,9 +6,7 @@ import {
   LandPlot, 
   Landmark, 
   ShoppingBag, 
-  Building,
-  ChevronDown,
-  ChevronUp
+  Building
 } from 'lucide-react';
 
 export interface CategoryOption {
@@ -123,11 +121,11 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
         </div>
         <button 
           type="button"
-          className="category-filter__expand-toggle"
+          className="archived-expand-button"
           onClick={() => setIsExpanded(!isExpanded)}
           aria-label={isExpanded ? "Collapse filter" : "Expand filter"}
         >
-          {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          <span className="archived-expand-icon">{isExpanded ? '▼' : '▶'}</span>
         </button>
       </div>
 

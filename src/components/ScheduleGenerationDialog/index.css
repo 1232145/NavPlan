@@ -1,3 +1,11 @@
+/* Schedule Dialog Title */
+.MuiDialog-root .MuiDialogTitle-root#schedule-dialog-title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  text-align: center;
+  padding: var(--space-6) var(--space-6) var(--space-2) var(--space-6);
+}
+
 /* Schedule Dialog Content */
 .schedule-dialog-content {
   display: flex;
@@ -20,12 +28,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
-}
-
-.time-input-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
 }
 
 .time-input-group p {
@@ -69,6 +71,24 @@
   padding: var(--space-4) var(--space-6);
 }
 
+/* Stylish dialog action buttons */
+.schedule-dialog-actions .MuiButton-root,
+.schedule-dialog-actions button {
+  border-radius: var(--radius-lg);
+  min-height: 40px;
+  font-weight: 600;
+  font-size: var(--text-sm);
+  transition: all 0.2s ease;
+  margin-bottom: var(--space-3);
+  margin-right: var(--space-6);
+}
+
+.schedule-dialog-actions .MuiButton-root:hover,
+.schedule-dialog-actions button:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
 /* Responsive design */
 @media (max-width: 480px) {
   .time-inputs-container {
@@ -83,4 +103,14 @@
   .schedule-dialog-actions {
     padding: var(--space-3) var(--space-4);
   }
+}
+
+/* Change border radius of Dialog paper */
+.MuiDialog-paper.css-16htz67-MuiPaper-root-MuiDialog-paper {
+  border-radius: var(--radius-xl);
+}
+
+/* Reduce bottom padding of DialogContent after DialogTitle */
+.MuiDialogTitle-root + .css-kw13he-MuiDialogContent-root {
+  padding-bottom: 0;
 } 

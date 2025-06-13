@@ -124,7 +124,6 @@
 
 .schedule-timeline-panel .place-ai-review {
   margin-top: 12px;
-  margin-left: 38px;
   padding: 12px 16px;
   background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
   border: 1px solid #b3d9ff;
@@ -155,7 +154,6 @@
 
 .schedule-timeline-panel .travel-segment-card {
   margin-top: 10px;
-  padding-top: 10px;
   border-top: 1px dashed var(--border-color);
 }
 

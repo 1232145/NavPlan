@@ -291,10 +291,6 @@
   transition: var(--transition-normal);
 }
 
-.archived-list-card.expanded .archived-expand-icon {
-  transform: rotate(90deg);
-}
-
 .archived-list-content {
   padding: 0 var(--space-6) var(--space-6);
   animation: slideIn 0.3s ease-out;
@@ -532,7 +528,7 @@
 .schedule-dialog-content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-3);
   padding: var(--space-2);
 }
 
@@ -542,7 +538,6 @@
   gap: var(--space-2);
   font-weight: 600;
   color: var(--color-secondary-800);
-  margin: 0 0 var(--space-3) 0;
   font-size: var(--text-base);
 }
 
@@ -558,7 +553,6 @@
 }
 
 .time-input-group p {
-  margin: 0 0 var(--space-2) 0;
   font-weight: 500;
   color: var(--color-secondary-700);
   font-size: var(--text-sm);

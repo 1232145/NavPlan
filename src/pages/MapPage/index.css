@@ -64,11 +64,6 @@
   transition: var(--transition-normal);
 }
 
-.itinerary-panel:hover {
-  background: var(--color-surface-elevated);
-  box-shadow: var(--shadow-xl);
-}
-
 /* Enhanced Search Bar Styling */
 .search-bar-container .search-bar {
   background: var(--glass-bg);

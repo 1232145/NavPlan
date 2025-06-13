@@ -87,6 +87,166 @@ html {
 @keyframes scheduleSpin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}.schedule-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  margin-bottom: 40px;
+}
+
+.schedule-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s ease-in-out;
+}
+
+.schedule-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-time {
+  width: 140px;
+  padding-right: 20px;
+  border-right: 2px solid #e0e0e0;
+  margin-right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.time-start {
+  font-weight: bold;
+  color: #1976d2;
+  font-size: 18px;
+  margin-bottom: 5px;
+}
+
+.time-duration {
+  font-size: 13px;
+  color: #888;
+  margin: 2px 0;
+}
+
+.time-end {
+  font-size: 14px;
+  color: #555;
+}
+
+.schedule-place {
+  flex: 1;
+}
+
+.schedule-place h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #333;
+  display: flex;
+  align-items: center;
+}
+
+.place-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: white;
+  font-weight: bold;
+  margin-right: 12px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.schedule-place p {
+  margin: 5px 0;
+  font-size: 15px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.schedule-place-type {
+  font-style: italic;
+  color: #888;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.schedule-place-address {
+  font-size: 14px;
+  color: #777;
+}
+
+.place-ai-review {
+  background-color: #f0fdf4;
+  border-left: 4px solid #28a745;
+  padding: 10px 15px;
+  margin-top: 15px;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #218838;
+  display: flex;
+  align-items: flex-start;
+}
+
+.place-ai-review .ai-icon {
+  font-size: 20px;
+  margin-right: 8px;
+  color: #28a745;
+}
+
+.travel-segment {
+  margin-top: 20px;
+  padding-top: 15px;
+  width: 35%;
+  text-align: center;
+}
+
+.travel-infor {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.travel-icon {
+  margin-right: 10px;
+  font-style: normal;
+  font-size: 18px;
+}
+
+.schedule-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  border-top: 1px solid #eaeaea;
+  padding-top: 16px;
+  position: relative;
+  z-index: 10;
+}
+
+.schedule-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
 }
 
 
@@ -278,6 +438,11 @@ html {
   margin-right: 10px;
   line-height: 1;
 }
+
+.ai-overview-note p {
+  margin-bottom: 0;
+} 
+
 
 .schedule-main-content {
   display: flex;
