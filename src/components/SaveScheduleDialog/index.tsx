@@ -16,6 +16,7 @@ interface SaveScheduleDialogProps {
   scheduleStartTime?: string;
   scheduleEndTime?: string;
   defaultName?: string;
+  originalTravelMode?: TravelMode;
 }
 
 export interface SaveScheduleOptions {
@@ -23,6 +24,7 @@ export interface SaveScheduleOptions {
   travelMode: TravelMode;
   startTime: string;
   endTime: string;
+  replaceSlotIndex?: number;
 }
 
 const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
@@ -34,17 +36,20 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
   error = null,
   scheduleStartTime = '09:00',
   scheduleEndTime = '19:00',
-  defaultName = ''
+  defaultName = '',
+  originalTravelMode = 'walking'
 }) => {
   const [name, setName] = useState('');
-  const [travelMode, setTravelMode] = useState<TravelMode>('walking');
   const [nameError, setNameError] = useState('');
+  const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
+
+  // Use the original travel mode (locked)
+  const travelMode = originalTravelMode;
 
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
       setName(defaultName || (selectedList ? `${selectedList.name} Schedule` : ''));
-      setTravelMode('walking');
       setNameError('');
     }
   }, [open, defaultName, selectedList]);
@@ -67,6 +72,9 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
     setNameError(validateName(value));
   }, [validateName]);
 
+  // Check if archive list is full
+  const isArchiveListFull = selectedList && selectedList.saved_schedules.length >= 3;
+
   // Handle save
   const handleSave = useCallback(async () => {
     const error = validateName(name);
@@ -75,17 +83,24 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
       return;
     }
 
+    // If archive list is full and no slot selected, show error
+    if (isArchiveListFull && selectedSlot === null) {
+      setNameError('Please select which schedule to replace');
+      return;
+    }
+
     try {
       await onSave({
         name: name.trim(),
         travelMode,
         startTime: scheduleStartTime,
-        endTime: scheduleEndTime
+        endTime: scheduleEndTime,
+        replaceSlotIndex: selectedSlot !== null ? selectedSlot + 1 : undefined
       });
     } catch (err) {
       // Error handling is done in parent component
     }
-  }, [name, travelMode, scheduleStartTime, scheduleEndTime, onSave, validateName]);
+  }, [name, travelMode, scheduleStartTime, scheduleEndTime, onSave, validateName, isArchiveListFull, selectedSlot]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -108,8 +123,8 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
   const canSave = !loading && !nameError && name.trim();
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+    <div className="save-schedule-modal-overlay" onClick={onClose}>
+      <div className="save-schedule-modal" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <h3 className="modal-title">
@@ -160,24 +175,42 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
             )}
           </div>
 
-          {/* Travel Mode */}
+          {/* Travel Mode - Read Only */}
           <div className="form-group">
             <label className="form-label">Travel Mode</label>
-            <div className="travel-mode-grid">
-              {TRAVEL_MODES.map(mode => (
-                <button
-                  key={mode.value}
-                  type="button"
-                  className={`travel-mode-option ${travelMode === mode.value ? 'selected' : ''}`}
-                  onClick={() => setTravelMode(mode.value)}
-                  disabled={loading}
-                >
-                  <span className="travel-mode-icon">{mode.icon}</span>
-                  <span>{mode.label}</span>
-                </button>
-              ))}
+            <div className="travel-mode-display">
+              <div className="travel-mode-readonly">
+                <span className="travel-mode-icon">
+                  {TRAVEL_MODES.find(mode => mode.value === travelMode)?.icon}
+                </span>
+                <span>{TRAVEL_MODES.find(mode => mode.value === travelMode)?.label}</span>
+                <span className="travel-mode-note">(matches generated schedule)</span>
+              </div>
             </div>
           </div>
+
+          {/* Slot Selection */}
+          {isArchiveListFull && (
+            <div className="form-group">
+              <label className="form-label">Replace Schedule</label>
+              <p className="form-description">This list is full (3/3). Select which schedule to replace:</p>
+              <div className="slot-selection">
+                {selectedList.saved_schedules.map((schedule, index) => (
+                  <div
+                    key={schedule.metadata.schedule_id}
+                    className={`slot-option ${selectedSlot === index ? 'selected' : ''}`}
+                    onClick={() => setSelectedSlot(index)}
+                  >
+                    <div className="slot-number">{index + 1}</div>
+                    <div className="slot-info">
+                      <div className="slot-name">{schedule.metadata.name}</div>
+                      <div className="slot-meta">{schedule.schedule.items.length} places</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Error Display */}
           {error && (
@@ -189,24 +222,22 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
 
         {/* Actions */}
         <div className="save-schedule-actions">
-          <div className="button-group end">
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              onClick={handleSave}
-              disabled={!canSave}
-            >
-              {loading ? 'Saving...' : 'Save Schedule'}
-            </Button>
-          </div>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleSave}
+            disabled={!canSave}
+          >
+            {loading ? 'Saving...' : 'Save Schedule'}
+          </Button>
         </div>
       </div>
     </div>

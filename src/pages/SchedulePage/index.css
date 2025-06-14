@@ -361,7 +361,7 @@ html {
     padding: 12px;
     box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
     margin: 0;
-    z-index: 100;
+    z-index: 1;
   }
   
   .schedule-btn {
@@ -449,18 +449,25 @@ html {
   background-color: #f6ffed;
   border: 1px solid #b7eb8f;
   border-radius: 15px;
-  padding: 12px 16px 0px 16px;
+  padding: 12px 16px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   font-size: 0.9rem;
   color: #135200;
   width: 100%;
+  margin-bottom: 16px;
 }
 
 .ai-selection-info .ai-icon {
   font-size: 1.2rem;
   margin-right: 10px;
   line-height: 1;
+  flex-shrink: 0;
+}
+
+.ai-selection-info p {
+  margin: 0;
+  line-height: 1.4;
 }
 
 .ai-overview-note p {

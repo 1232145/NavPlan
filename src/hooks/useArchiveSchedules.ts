@@ -18,7 +18,7 @@ interface SaveScheduleOptions {
   travelMode: TravelMode;
   startTime: string;
   endTime: string;
-  replaceSlot?: number;
+  replaceSlotIndex?: number;
 }
 
 export const useArchiveSchedules = () => {
@@ -99,7 +99,7 @@ export const useArchiveSchedules = () => {
         start_time: options.startTime,
         end_time: options.endTime,
         place_toggles: placeToggles,
-        replace_existing_slot: options.replaceSlot
+        replace_existing_slot: options.replaceSlotIndex
       };
 
       const result = await archiveScheduleService.saveSchedule(request);

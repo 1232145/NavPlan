@@ -1,11 +1,11 @@
 import React from 'react';
 import { ArchivedList } from '../../types';
 import { Button } from '../Button';
-import { 
-  X, 
-  FolderOpen, 
-  Calendar, 
-  MapPin, 
+import {
+  X,
+  FolderOpen,
+  Calendar,
+  MapPin,
   CheckCircle,
   AlertCircle,
   Loader2
@@ -43,11 +43,11 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString(undefined, { 
-      weekday: 'short', 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString(undefined, {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
@@ -64,8 +64,8 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
             <FolderOpen size={20} style={{ marginRight: '12px' }} />
             Choose Archive List
           </h3>
-          <button 
-            className="modal-close" 
+          <button
+            className="modal-close"
             onClick={onClose}
             disabled={loading}
           >
@@ -101,7 +101,7 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
               <FolderOpen size={48} />
               <h4>No Available Lists</h4>
               <p>
-                All your archive lists are full (3/3 schedules). 
+                All your archive lists are full (3/3 schedules).
                 Create a new list or delete some schedules to free up space.
               </p>
             </div>
@@ -138,7 +138,7 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="archive-list-option-slots">
                     <div className="slots-info">
                       <span className="slots-available">
@@ -168,22 +168,21 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
 
         {/* Footer */}
         <div className="archive-list-selector-footer">
-          <div className="button-group end">
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={onClose}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              onClick={handleConfirm}
-              disabled={loading || !selectedList}
-            >
-                          {loading ? (
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={onClose}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleConfirm}
+            disabled={loading || !selectedList}
+          >
+            {loading ? (
               <>
                 <Loader2 size={16} className="loading-spinner small" />
                 Saving...
@@ -191,8 +190,7 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
             ) : (
               'Save to This List'
             )}
-            </Button>
-          </div>
+          </Button>
         </div>
       </div>
     </div>

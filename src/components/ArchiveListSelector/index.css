@@ -189,6 +189,9 @@
 
 /* Footer */
 .archive-list-selector-footer {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
   padding: var(--space-6);
   background: var(--color-secondary-50);
   border-top: 1px solid var(--color-secondary-200);

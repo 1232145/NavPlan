@@ -376,7 +376,7 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
+    z-index: 2;
     border: none;
     border-top: 1px solid var(--glass-border);
     box-shadow: 0 -8px 32px rgba(148, 163, 184, 0.15);

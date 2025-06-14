@@ -21,7 +21,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
 import { useArchiveSchedules } from '../../hooks';
-import { SavedSchedule } from '../../types';
+import { SavedSchedule, TravelMode } from '../../types';
 import DirectionsMap from '../../components/DirectionsMap';
 import ScheduleTimelinePanel from '../../components/ScheduleTimelinePanel';
 import SaveScheduleDialog from '../../components/SaveScheduleDialog';
@@ -169,6 +169,7 @@ const SchedulePage: React.FC = () => {
           scheduleStartTime={currentSchedule.items[0]?.start_time || '09:00'}
           scheduleEndTime={currentSchedule.items[currentSchedule.items.length - 1]?.end_time || '19:00'}
           defaultName={sourceArchiveList ? `${sourceArchiveList.name} Schedule` : ''}
+          originalTravelMode={travelMode as TravelMode}
         />
       )}
       

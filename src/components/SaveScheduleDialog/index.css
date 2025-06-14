@@ -1,3 +1,91 @@
+/* Modal Overlay */
+.save-schedule-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal Container */
+.save-schedule-modal {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  position: relative;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { 
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.modal-header {
+  padding: 24px 24px 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: none;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-title svg {
+  color: #3b82f6;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Content */
 .save-schedule-content {
   padding: 24px;
   display: flex;
@@ -63,60 +151,188 @@
   color: #16a34a;
 }
 
-/* Travel Mode Grid */
-.travel-mode-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+/* Form */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.travel-mode-option {
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0;
+}
+
+.form-input {
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.form-error-text {
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Travel Mode Display */
+.travel-mode-display {
+  margin-top: var(--space-2);
+}
+
+.travel-mode-readonly {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-}
-
-.travel-mode-option:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  transform: translateY(-1px);
-}
-
-.travel-mode-option.selected {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  border-color: #3b82f6;
-  color: #1d4ed8;
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
-}
-
-.travel-mode-option:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-secondary-50);
+  border: 1px solid var(--color-secondary-200);
+  border-radius: var(--radius-lg);
+  color: var(--color-secondary-700);
 }
 
 .travel-mode-icon {
-  font-size: 18px;
+  font-size: var(--text-lg);
+}
+
+.travel-mode-note {
+  font-size: var(--text-xs);
+  color: var(--color-secondary-500);
+  margin-left: auto;
+}
+
+/* Slot Selection */
+.form-description {
+  margin: var(--space-1) 0 var(--space-3) 0;
+  font-size: var(--text-sm);
+  color: var(--color-secondary-600);
+}
+
+.slot-selection {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+}
+
+.slot-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 2px solid var(--color-secondary-200);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  background: white;
+  text-align: center;
+}
+
+.slot-option:hover {
+  border-color: var(--color-primary-300);
+  background: var(--color-primary-50);
+}
+
+.slot-option.selected {
+  border-color: var(--color-primary-500);
+  background: var(--color-primary-50);
+}
+
+.slot-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: var(--color-secondary-200);
+  color: var(--color-secondary-700);
+  border-radius: 50%;
+  font-size: var(--text-base);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.slot-option.selected .slot-number {
+  background: var(--color-primary-500);
+  color: white;
+}
+
+.slot-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.slot-name {
+  font-weight: 500;
+  color: var(--color-secondary-800);
+  margin-bottom: var(--space-1);
+  word-break: break-word;
+}
+
+.slot-meta {
+  font-size: var(--text-xs);
+  color: var(--color-secondary-500);
+}
+
+/* Error Message */
+.error-message {
+  background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Actions */
 .save-schedule-actions {
-  padding: var(--space-6);
-  background: var(--color-secondary-50);
-  border-top: 1px solid var(--color-secondary-200);
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding: 20px 24px;
+  background: #fafafa;
+  border-top: 1px solid #e5e7eb;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .travel-mode-grid {
+  .save-schedule-modal {
+    max-width: 95vw;
+    margin: 10px;
+  }
+  
+  .slot-selection {
     grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+  
+  .slot-option {
+    flex-direction: row;
+    text-align: left;
+    gap: var(--space-3);
+  }
+  
+  .slot-info {
+    text-align: left;
   }
 } 

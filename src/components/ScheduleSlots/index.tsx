@@ -107,7 +107,7 @@ const ScheduleSlots: React.FC<ScheduleSlotsProps> = ({
         <div className="slot-basic-info">
           <Calendar size={16} />
           <span className="slot-name">
-            {schedule ? schedule.metadata.name : `Empty Slot ${slotNumber}`}
+            {schedule ? schedule.metadata.name : `Empty Slot`}
           </span>
           {schedule?.metadata.is_favorite && <Star size={14} className="favorite-icon" />}
         </div>
