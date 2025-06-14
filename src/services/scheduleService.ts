@@ -39,6 +39,8 @@ export const scheduleService = {
    * @param travelMode Travel mode (walking, driving, bicycling, transit)
    * @param prompt Optional user preferences/instructions for the AI
    * @param dayOverview Optional existing day overview (for updating a schedule)
+   * @param total_places Total places in the schedule
+   * @param preferences Optional user preferences for the AI
    * @returns A Schedule object with optimized places and routing
    */
   async generateSchedule(
@@ -48,7 +50,8 @@ export const scheduleService = {
     prompt?: string,
     dayOverview?: string,
     total_places?: number,
-    endTime: string = "19:00"
+    endTime: string = "19:00",
+    preferences?: any
   ): Promise<Schedule> {
     // If this is an update request (has dayOverview), check cache
     const isUpdateRequest = !!dayOverview;
@@ -62,14 +65,21 @@ export const scheduleService = {
       }
     }
     
-    const response = await api.post('/schedules', {
+    const requestBody: any = {
       places,
       start_time: startTime,
       end_time: endTime,
       travel_mode: travelMode,
       prompt,
       day_overview: dayOverview,
-    });
+    };
+
+    // Add preferences if provided
+    if (preferences) {
+      requestBody.preferences = preferences;
+    }
+    
+    const response = await api.post('/schedules', requestBody);
     
     const schedule = response.data.schedule;
     schedule.total_places = total_places;

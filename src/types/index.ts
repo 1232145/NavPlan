@@ -23,6 +23,7 @@ export interface Place {
   userAdded?: boolean;
   note?: string;
   ai_review?: string | null;
+  duration_minutes?: number;
 }
 
 export interface ArchivedList {
@@ -31,6 +32,10 @@ export interface ArchivedList {
   date: string;
   places: Place[];
   note?: string;
+  similar_public_places?: string[];
+  popularity_score?: number;
+  ai_generated_tags?: string[];
+  saved_schedules: SavedSchedule[];
 }
 
 export interface RouteSegment {
@@ -59,4 +64,89 @@ export interface Schedule {
   total_distance_meters: number;
   day_overview?: string;
   total_places?: number;
+}
+
+export type TravelMode = 'walking' | 'driving' | 'bicycling' | 'transit';
+
+export type BalanceMode = 'focused' | 'balanced' | 'diverse';
+
+export interface UserPreferences {
+  must_include: string[];
+  balance_mode: BalanceMode;
+  max_places: number;
+  meal_requirements: boolean;
+}
+
+export interface SavedScheduleMetadata {
+  schedule_id: string;
+  name: string;
+  travel_mode: TravelMode;
+  start_time: string;
+  end_time: string;
+  created_at: string;
+  last_modified: string;
+  is_favorite: boolean;
+}
+
+export interface SavedSchedule {
+  metadata: SavedScheduleMetadata;
+  schedule: Schedule;
+  generation_preferences?: Record<string, any>;
+  place_toggles: Record<string, boolean>;
+}
+
+export interface SaveScheduleRequest {
+  archive_list_id: string;
+  schedule_name: string;
+  schedule: Schedule;
+  travel_mode: TravelMode;
+  start_time: string;
+  end_time: string;
+  generation_preferences?: Record<string, any>;
+  place_toggles: Record<string, boolean>;
+  replace_existing_slot?: number;
+}
+
+export interface UpdateScheduleRequest {
+  archive_list_id: string;
+  schedule_id: string;
+  updates: Record<string, any>;
+}
+
+export interface BaseScheduleRequest {
+  start_time: string;
+  end_time: string;
+  travel_mode: TravelMode;
+  prompt?: string;
+  day_overview?: string;
+  preferences?: UserPreferences;
+}
+
+export interface ScheduleRequest extends BaseScheduleRequest {
+  places: Place[];
+}
+
+export interface LocationScheduleRequest extends BaseScheduleRequest {
+  latitude: number;
+  longitude: number;
+  radius_meters: number;
+  categories?: string[];
+  max_places: number;
+  include_current_location: boolean;
+}
+
+export interface ArchiveListHelpers {
+  canAddSchedule: (list: ArchivedList) => boolean;
+  getAvailableSlotNumber: (list: ArchivedList) => number | null;
+  getScheduleById: (list: ArchivedList, scheduleId: string) => SavedSchedule | null;
+  getScheduleSlotName: (slotNumber: number) => string;
+}
+
+export interface ArchiveScheduleUIState {
+  selectedList: ArchivedList | null;
+  selectedSchedule: SavedSchedule | null;
+  isViewingSchedule: boolean;
+  isSavingSchedule: boolean;
+  saveScheduleDialogOpen: boolean;
+  scheduleSlotSelection: number | null;
 }

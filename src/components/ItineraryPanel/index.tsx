@@ -86,7 +86,7 @@ const FavoritePlacesList: React.FC<{
   removeFavoritePlace: (id: string) => void; 
   selectedPlace: Place | null; 
   clearAllFavorites: () => void; 
-  archiveFavorites: (name?: string, note?: string) => void; 
+  archiveFavorites: (name?: string, note?: string) => Promise<void>; 
   setActiveTab: (tab: 'saved' | 'search') => void;
 }> = ({ favoritePlaces, removeFavoritePlace, selectedPlace, clearAllFavorites, archiveFavorites, setActiveTab }) => {
   let results = favoritePlaces;
@@ -114,7 +114,11 @@ const FavoritePlacesList: React.FC<{
 
   const handleArchiveConfirm = async () => {
     try {
-      await archiveFavorites(archiveName.trim() || undefined, archiveNote.trim() || undefined);
+      
+      await archiveFavorites(
+        archiveName.trim() || undefined, 
+        archiveNote.trim() || undefined
+      );
       setArchiveOpen(false);
       setArchiveName('');
       setArchiveNote('');
@@ -207,7 +211,9 @@ const FavoritePlacesList: React.FC<{
             variant="outlined"
             value={archiveNote}
             onChange={e => setArchiveNote(e.target.value)}
+            sx={{ mb: 2 }}
           />
+
         </DialogContent>
         <DialogActions>
           <Button variant="default" size="sm" onClick={handleArchiveClose}>Cancel</Button>
@@ -243,8 +249,7 @@ const LocationBasedExploration: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [locationStatus, setLocationStatus] = useState<string>('');
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<{latitude: number, longitude: number} | null>(null);
-  const { generateLocationBasedSchedule } = useAppContext();
+  const { generateLocationBasedSchedule, currentLocation, requestLocationPermission } = useAppContext();
   const navigate = useNavigate();
 
   const handleGenerateFromLocation = async () => {
@@ -252,77 +257,21 @@ const LocationBasedExploration: React.FC = () => {
     setLocationStatus('Requesting location permission...');
     
     try {
-      // Check if geolocation is supported
-      if (!navigator.geolocation) {
-        setLocationStatus('Geolocation is not supported by this browser.');
-        setIsGenerating(false);
-        return;
-      }
-
-      // Check if we're on HTTPS (required for geolocation in production)
-      if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-        setLocationStatus('Location access requires HTTPS. Please use a secure connection.');
-        setIsGenerating(false);
-        return;
-      }
-
-      setLocationStatus('Please allow location access when prompted...');
-
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude, longitude } = position.coords;
-            setLocationStatus('Location found! Please choose your schedule preferences...');
-            
-            // Store location and open schedule dialog
-            setCurrentLocation({ latitude, longitude });
-            setIsGenerating(false);
-            setLocationStatus('');
-            setScheduleDialogOpen(true);
-            
-          } catch (error) {
-            console.error('Error processing location:', error);
-            setLocationStatus('Failed to process location. Please try again.');
-            setTimeout(() => {
-              setIsGenerating(false);
-              setLocationStatus('');
-            }, 3000);
-          }
-        },
-        (error) => {
-          console.error('Geolocation error:', error);
-          let errorMessage = '';
-          
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = 'Location access was denied. Please enable location permissions in your browser settings and try again.';
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Location information is unavailable. Please check your device settings.';
-              break;
-            case error.TIMEOUT:
-              errorMessage = 'Location request timed out. Please try again.';
-              break;
-            default:
-              errorMessage = 'An unknown error occurred while retrieving location.';
-              break;
-          }
-          
-          setLocationStatus(errorMessage);
-          setTimeout(() => {
-            setIsGenerating(false);
-            setLocationStatus('');
-          }, 5000);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 300000 // 5 minutes
+      if (!currentLocation) {
+        await requestLocationPermission();
+        if (!currentLocation) {
+          throw new Error('Location permission denied');
         }
-      );
+      }
+      
+      setLocationStatus('Location found! Please choose your schedule preferences...');
+      setIsGenerating(false);
+      setLocationStatus('');
+      setScheduleDialogOpen(true);
+      
     } catch (error) {
       console.error('Location error:', error);
-      setLocationStatus('Failed to access location services.');
+      setLocationStatus('Failed to get current location. Please enable location permissions and try again.');
       setTimeout(() => {
         setIsGenerating(false);
         setLocationStatus('');
@@ -332,7 +281,6 @@ const LocationBasedExploration: React.FC = () => {
 
   const handleScheduleDialogClose = () => {
     setScheduleDialogOpen(false);
-    setCurrentLocation(null);
   };
 
   const handleScheduleDialogConfirm = async (options: ScheduleGenerationOptions) => {
@@ -343,14 +291,15 @@ const LocationBasedExploration: React.FC = () => {
       
       // Generate location-based schedule with user preferences
       await generateLocationBasedSchedule(
-        currentLocation.latitude,
-        currentLocation.longitude,
+        currentLocation.lat,
+        currentLocation.lng,
         {
           radius_meters: 5000,
           travel_mode: "walking",
           start_time: options.startTime,
           end_time: options.endTime,
-          prompt: options.prompt
+          prompt: options.prompt,
+          includeCurrentLocation: options.includeCurrentLocation
         }
       );
       
@@ -363,8 +312,6 @@ const LocationBasedExploration: React.FC = () => {
       setTimeout(() => {
         setLocationStatus('');
       }, 5000);
-    } finally {
-      setCurrentLocation(null);
     }
   };
 
@@ -569,7 +516,7 @@ const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) 
               selectedPlace={selectedPlace} 
               clearAllFavorites={clearAllFavorites} 
               archiveFavorites={archiveFavorites} 
-              setActiveTab={setActiveTab} 
+              setActiveTab={setActiveTab}
             />
           : <SearchResultsList 
               searchResults={searchResults} 

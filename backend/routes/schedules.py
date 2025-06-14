@@ -50,12 +50,25 @@ async def create_schedule(
             day_overview = request.day_overview
         else:
             logger.info(f"Creating new schedule from {len(request.places)} places with time range: {request.start_time} to {request.end_time}")
+            
+            # Extract preferences from request
+            preferences = None
+            if request.preferences:
+                preferences = {
+                    'must_include': request.preferences.must_include,
+                    'balance_mode': request.preferences.balance_mode,
+                    'max_places': request.preferences.max_places,
+                    'meal_requirements': request.preferences.meal_requirements
+                }
+                logger.info(f"Using user preferences: {preferences}")
+            
             places, day_overview = await optimize_place_order(
                 request.places,
                 request.start_time,
                 request.prompt,
                 request.travel_mode,
-                end_time=request.end_time
+                end_time=request.end_time,
+                preferences=preferences
             )
             logger.info(f"AI selected {len(places)} places for the schedule")
         
@@ -197,20 +210,56 @@ async def generate_schedule_from_location(
             }
             places.append(place)
         
-        # Step 4: Create schedule request and optimize with AI 
-        # Use the SAME optimization pipeline as regular schedules for consistency
+        # Step 4: Add current location as starting point if requested
+        if request.include_current_location:
+            logger.info("Adding current location as starting point")
+            current_location_place = {
+                "id": "current-location",
+                "name": "Your Current Location", 
+                "placeType": "point_of_interest",
+                "address": "Starting point",
+                "location": {
+                    "lat": request.latitude,
+                    "lng": request.longitude
+                },
+                "geometry": {
+                    "location": {
+                        "lat": request.latitude,
+                        "lng": request.longitude
+                    }
+                },
+                "userAdded": True,
+                "note": "Starting location for this route"
+            }
+            places.insert(0, current_location_place)
+            logger.info(f"Added current location as first place, now have {len(places)} total places")
+
+        # Step 5: Create schedule request and optimize with AI 
         logger.info("Running AI optimization on discovered POIs with route planning")
+        
+        # Extract preferences from request if provided
+        preferences = None
+        if hasattr(request, 'preferences') and request.preferences:
+            preferences = {
+                'must_include': request.preferences.must_include,
+                'balance_mode': request.preferences.balance_mode,
+                'max_places': request.preferences.max_places,
+                'meal_requirements': request.preferences.meal_requirements
+            }
+            logger.info(f"Using user preferences for location-based generation: {preferences}")
+        
         optimized_places, day_overview = await optimize_place_order(
             places,
             request.start_time,
             request.prompt,
             request.travel_mode,
-            end_time=request.end_time  # Pass end time for proper constraints
+            end_time=request.end_time,  # Pass end time for proper constraints
+            preferences=preferences
         )
         
         logger.info(f"AI selected {len(optimized_places)} places from {len(places)} nearby POIs")
         
-        # Step 5: Generate final schedule with routing
+        # Step 6: Generate final schedule with routing
         schedule = await generate_schedule(
             optimized_places,
             request.start_time,
@@ -219,7 +268,7 @@ async def generate_schedule_from_location(
             request.end_time
         )
         
-        # Step 6: Return comprehensive response
+        # Step 7: Return comprehensive response
         return {
             "schedule": schedule,
             "location": {

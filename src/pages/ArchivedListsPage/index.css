@@ -342,6 +342,30 @@
   font-style: italic;
 }
 
+.edit-mode-warning {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.edit-mode-warning svg {
+  color: #dc2626;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.edit-mode-warning p {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--color-secondary-700);
+}
+
 .generate-button-header {
   background: linear-gradient(135deg, 
     var(--color-primary-500) 0%, 
@@ -372,6 +396,66 @@
 .generate-button-header:active {
   transform: translateY(0);
 }
+
+/* Edit and Delete buttons */
+.edit-button-header, .delete-button-header, .save-button-header, .cancel-button-header, .done-edit-button-header {
+  background: linear-gradient(135deg, 
+    var(--color-secondary-500) 0%, 
+    var(--color-secondary-600) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-secondary-600);
+}
+
+.edit-button-header:hover {
+  background: linear-gradient(135deg, 
+    var(--color-secondary-600) 0%, 
+    var(--color-secondary-700) 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.delete-button-header {
+  background: linear-gradient(135deg, 
+    var(--color-error-500) 0%, 
+    var(--color-error-600) 100%);
+  border-color: var(--color-error-600);
+}
+
+.delete-button-header:hover {
+  background: linear-gradient(135deg, 
+    var(--color-error-600) 0%, 
+    var(--color-error-700) 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.save-button-header {
+  background: linear-gradient(135deg, 
+    #22c55e 0%, 
+    #16a34a 100%);
+  border-color: #16a34a;
+}
+
+.save-button-header:hover {
+  background: linear-gradient(135deg, 
+    #16a34a 0%, 
+    #15803d 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+
 
 /* Places grid and cards */
 .archived-places-grid {
@@ -442,6 +526,12 @@
   align-items: flex-start;
   gap: var(--space-3);
   margin-bottom: var(--space-3);
+}
+
+.archived-place-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .archived-place-name {
@@ -524,73 +614,184 @@
   font-weight: 500;
 }
 
-/* Schedule dialog styles */
-.schedule-dialog-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-2);
+/* Edit mode styles */
+.archived-place-card.edit-mode {
+  border: 2px solid var(--color-primary-300);
+  background: var(--color-primary-50);
 }
 
-.schedule-dialog-label {
+.archived-place-card.disabled {
+  opacity: 0.4;
+  background: var(--color-secondary-50);
+  transform: scale(0.98);
+  filter: grayscale(0.3);
+  transition: var(--transition-normal);
+}
+
+.archived-place-card.disabled:hover {
+  opacity: 0.6;
+  transform: scale(1);
+}
+
+.archived-place-card.disabled .archived-place-number {
+  background: var(--color-secondary-400);
+  color: white;
+}
+
+.archived-place-edit-controls {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 600;
-  color: var(--color-secondary-800);
-  font-size: var(--text-base);
 }
 
-.time-inputs-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
-}
-
-.time-input-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.time-input-group p {
-  font-weight: 500;
-  color: var(--color-secondary-700);
-  font-size: var(--text-sm);
-}
-
-.schedule-summary-info {
-  background: var(--color-primary-50);
-  border: 1px solid var(--color-primary-200);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-3);
-}
-
-.schedule-summary-icon {
-  background: var(--color-primary-100);
-  color: var(--color-primary-600);
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-lg);
+.place-toggle-button, .place-remove-button {
+  background: none;
+  border: 1px solid var(--color-secondary-300);
+  border-radius: var(--radius-md);
+  padding: var(--space-1);
+  cursor: pointer;
+  transition: var(--transition-normal);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
 }
 
-.schedule-summary-info p {
+.place-toggle-button.enabled {
+  color: #16a34a;
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.place-toggle-button.disabled {
+  color: var(--color-secondary-500);
+  border-color: var(--color-secondary-300);
+  background: var(--color-secondary-50);
+}
+
+.place-toggle-button:hover {
+  transform: scale(1.05);
+}
+
+.place-remove-button {
+  color: #dc2626;
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.place-remove-button:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  transform: scale(1.05);
+}
+
+/* Delete confirmation dialog */
+.delete-confirmation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.delete-confirmation-dialog {
+  background: white;
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-2xl);
+  max-width: 480px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: slideInScale 0.3s ease-out;
+}
+
+@keyframes slideInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.delete-confirmation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-6);
+  border-bottom: 1px solid var(--color-secondary-200);
+}
+
+.delete-confirmation-header h3 {
   margin: 0;
-  font-size: var(--text-sm);
-  line-height: 1.5;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-secondary-800);
+}
+
+.delete-confirmation-close {
+  background: none;
+  border: none;
+  color: var(--color-secondary-500);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  transition: var(--transition-normal);
+}
+
+.delete-confirmation-close:hover {
+  background: var(--color-secondary-100);
   color: var(--color-secondary-700);
 }
 
-.schedule-dialog-actions {
-  padding: var(--space-4) var(--space-6) var(--space-6);
-  gap: var(--space-3);
+.delete-confirmation-content {
+  padding: var(--space-6);
+  text-align: center;
 }
+
+.delete-confirmation-icon {
+  background: #fee2e2;
+  color: #dc2626;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-4);
+}
+
+.delete-confirmation-content p {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--text-base);
+  color: var(--color-secondary-700);
+  line-height: 1.5;
+}
+
+.delete-confirmation-warning {
+  font-size: var(--text-sm) !important;
+  color: var(--color-secondary-600) !important;
+  font-style: italic;
+}
+
+.delete-confirmation-actions {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  border-top: 1px solid var(--color-secondary-200);
+  justify-content: flex-end;
+}
+
+/* Removed duplicate schedule dialog styles - they're in ScheduleGenerationDialog/index.css */
 
 /* Responsive Design */
 @media (max-width: 1024px) {
@@ -616,6 +817,11 @@
     gap: var(--space-3);
   }
   
+  .archived-list-header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  
   .archived-list-details {
     flex-direction: column;
     align-items: flex-start;
@@ -626,8 +832,9 @@
     grid-template-columns: 1fr;
   }
   
-  .time-inputs-container {
-    grid-template-columns: 1fr;
+  .delete-confirmation-dialog {
+    width: 95%;
+    margin: var(--space-4);
   }
 }
 
@@ -669,5 +876,16 @@
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-2);
+  }
+  
+  .archived-place-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  
+  .archived-place-controls {
+    width: 100%;
+    justify-content: space-between;
   }
 } 

@@ -101,115 +101,238 @@ def create_place_text_for_embedding(place: Dict[str, Any]) -> str:
     
     return " | ".join(parts)
 
-async def vector_search_places(places: List[Dict[str, Any]], query: str, top_k: int = None) -> List[Dict[str, Any]]:
+# Removed complex intent detection - using explicit user preferences instead
+
+async def preference_based_selection(places: List[Dict[str, Any]], preferences: Dict[str, Any], query: str = "") -> List[Dict[str, Any]]:
     """
-    Use vector search to find places most relevant to the user's query
-    This acts as a semantic filter before AI processing
+    Simple, reliable place selection based on explicit user preferences.
     """
     try:
-        if not query or not places:
+        if not places:
             return places
         
-        if not SENTENCE_TRANSFORMERS_AVAILABLE:
-            logger.warning("sentence-transformers not available, skipping vector search")
-            return places
+        logger.info(f"PREFERENCE-BASED SELECTION: {len(places)} places | Preferences: {preferences}")
         
-        logger.info(f"Performing vector search on {len(places)} places with query: '{query}'")
+        # Extract user preferences
+        must_include = preferences.get('must_include', [])  # ['restaurants', 'museums', 'cafes']
+        max_places = preferences.get('max_places', 12)
+        balance_mode = preferences.get('balance_mode', 'balanced')  # 'focused', 'balanced', 'diverse'
+        meal_requirements = preferences.get('meal_requirements', False)
         
-        # Create query embedding
-        query_embedding = await create_query_embedding(query)
-        if not query_embedding:
-            logger.warning("Could not create query embedding, returning all places")
-            return places
+        # Define category mappings
+        category_mapping = {
+            'restaurants': ['catering.restaurant', 'catering.fast_food'],
+            'cafes': ['catering.cafe'],
+            'museums': ['tourism.museum', 'tourism.attraction'],
+            'parks': ['leisure.park'],
+            'shopping': ['shop'],
+            'bars': ['catering.bar'],
+            'attractions': ['tourism.attraction', 'tourism.museum']
+        }
         
-        # PERFORMANCE OPTIMIZATION: Batch process all place texts at once
-        place_texts = []
+        # Handle meal requirements - ensure restaurants are included
+        if meal_requirements and 'restaurants' not in must_include:
+            must_include = list(must_include) + ['restaurants']
+            logger.info("Added restaurants to must_include due to meal requirements")
+        
+        # Set limits based on preferences and balance mode
+        category_limits = {}
+        
+        if must_include:
+            # User has explicit preferences - honor them
+            for category in must_include:
+                if balance_mode == 'focused':
+                    # Heavy focus on selected categories
+                    category_limits[category] = 6 if category in ['restaurants', 'cafes'] else 4
+                elif balance_mode == 'balanced':
+                    # Balanced representation
+                    category_limits[category] = 4 if category in ['restaurants', 'cafes'] else 3
+                else:  # diverse
+                    # Light representation of each
+                    category_limits[category] = 3
+            
+            # For meal requirements, ensure minimum restaurant count
+            if meal_requirements and category_limits.get('restaurants', 0) < 2:
+                category_limits['restaurants'] = 2
+                logger.info("Ensured minimum 2 restaurants for meal requirements")
+            
+            # Set lower limits for non-selected categories
+            all_categories = ['restaurants', 'cafes', 'museums', 'parks', 'shopping', 'bars']
+            for category in all_categories:
+                if category not in category_limits:
+                    category_limits[category] = 1 if balance_mode != 'focused' else 0
+        else:
+            # No explicit preferences - use balanced defaults
+            category_limits = {
+                'restaurants': 3,
+                'cafes': 3, 
+                'museums': 2,
+                'parks': 2,
+                'shopping': 1,
+                'bars': 1
+            }
+        
+        logger.info(f"Category limits based on preferences: {category_limits}")
+        
+        # Simple selection algorithm
+        selected_places = []
+        selected_place_ids = set()  # Track selected IDs to prevent duplicates
+        category_counts = {cat: 0 for cat in category_limits.keys()}
+        
+        # Group places by category
+        places_by_category = {cat: [] for cat in category_limits.keys()}
+        other_places = []
+        
         for place in places:
-            place_text = create_place_text_for_embedding(place)
-            place_texts.append(place_text)
+            place_category = place.get('category', 'unknown')
+            categorized = False
+            
+            for user_category, db_categories in category_mapping.items():
+                if place_category in db_categories:
+                    places_by_category[user_category].append(place)
+                    categorized = True
+                    break
+            
+            if not categorized:
+                other_places.append(place)
         
-        # Create all embeddings in a single batch call for massive speed improvement
+        # Phase 1: Fill must-include categories first (prioritize meal requirements)
+        categories_to_process = list(must_include) if must_include else list(category_limits.keys())
+        
+        # If meal requirements, prioritize restaurants first
+        if meal_requirements and 'restaurants' in categories_to_process:
+            categories_to_process.remove('restaurants')
+            categories_to_process.insert(0, 'restaurants')
+        
+        for category in categories_to_process:
+            limit = category_limits.get(category, 0)
+            available_places = places_by_category.get(category, [])
+            
+            # Filter out already selected places by ID
+            available_places = [p for p in available_places if p.get('id') not in selected_place_ids]
+            
+            if not available_places:
+                logger.info(f"No available {category} places (all may be already selected)")
+                continue
+            
+            # Use vector search if we have a query, otherwise random selection
+            if query and len(query.strip()) > 5 and available_places:
+                # Simple vector scoring for this category only
+                scored_places = await simple_vector_score(available_places, query)
+                selected_from_category = scored_places[:limit]
+            else:
+                # Take first available places for deterministic selection
+                selected_from_category = available_places[:limit]
+            
+            # Add to selection with duplicate prevention
+            for place in selected_from_category:
+                place_id = place.get('id')
+                if place_id not in selected_place_ids:
+                    selected_places.append(place)
+                    selected_place_ids.add(place_id)
+                    category_counts[category] += 1
+            
+            logger.info(f"Selected {category_counts[category]} {category} places")
+        
+        # Phase 2: Fill remaining slots with other categories if needed
+        remaining_slots = max_places - len(selected_places)
+        if remaining_slots > 0:
+            for category, limit in category_limits.items():
+                if remaining_slots <= 0:
+                    break
+                
+                current_count = category_counts[category]
+                if current_count < limit:
+                    available_places = places_by_category.get(category, [])
+                    # Filter out already selected places by ID
+                    available_places = [p for p in available_places if p.get('id') not in selected_place_ids]
+                    
+                    additional_needed = min(limit - current_count, remaining_slots)
+                    additional_places = available_places[:additional_needed]
+                    
+                    # Add with duplicate prevention
+                    for place in additional_places:
+                        place_id = place.get('id')
+                        if place_id not in selected_place_ids and remaining_slots > 0:
+                            selected_places.append(place)
+                            selected_place_ids.add(place_id)
+                            remaining_slots -= 1
+                            category_counts[category] += 1
+        
+        # Log final selection
+        final_counts = {}
+        for place in selected_places:
+            place_category = place.get('category', 'unknown')
+            for user_category, db_categories in category_mapping.items():
+                if place_category in db_categories:
+                    final_counts[user_category] = final_counts.get(user_category, 0) + 1
+                    break
+        
+        logger.info(f"FINAL SELECTION: {len(selected_places)} places | Distribution: {final_counts}")
+        
+        # Validate meal requirements are met
+        if meal_requirements and final_counts.get('restaurants', 0) == 0:
+            logger.warning("⚠️ Meal requirements requested but no restaurants selected - may need more restaurant data")
+        
+        return selected_places
+        
+    except Exception as e:
+        logger.error(f"Error in preference-based selection: {e}")
+        return places[:12]  # Fallback to first 12 places
+
+async def simple_vector_score(places: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
+    """
+    Lightweight vector scoring for places when user has a query.
+    Much simpler than the previous complex system.
+    """
+    try:
+        if not SENTENCE_TRANSFORMERS_AVAILABLE or not query:
+            return places
+        
         model = get_embedding_model()
         if model is None:
-            logger.warning("Could not load embedding model")
             return places
         
-        # Batch encode all place texts at once (much faster than individual calls)
+        # Create embeddings
+        query_embedding = await create_query_embedding(query)
+        if not query_embedding:
+            return places
+        
+        place_texts = [create_place_text_for_embedding(place) for place in places]
         place_embeddings = model.encode(place_texts, convert_to_tensor=False, show_progress_bar=False)
         
-        # Calculate similarities in batch
-        place_scores = []
-        for i, (place, place_embedding) in enumerate(zip(places, place_embeddings)):
+        # Score and sort
+        scored_places = []
+        for place, place_embedding in zip(places, place_embeddings):
             if hasattr(place_embedding, 'tolist'):
                 place_embedding = place_embedding.tolist()
             else:
                 place_embedding = list(place_embedding)
             
             similarity = cosine_similarity(query_embedding, place_embedding)
-            place_scores.append((i, similarity, place))
+            scored_places.append((similarity, place))
         
-        # Sort by similarity score (highest first)
-        place_scores.sort(key=lambda x: x[1], reverse=True)
-        
-        # Implement diversity-aware selection instead of pure similarity
-        if top_k is None:
-            # More generous selection - aim for 60-80% of places for better diversity
-            top_k = max(8, int(len(places) * 0.7))  # Take 70% of places, minimum 8
-        
-        # Diversity-aware selection: ensure we don't have too many of the same category
-        selected_places = []
-        category_counts = {}
-        max_per_category = 3  # Maximum places per category type
-        
-        # First pass: select high-relevance places with diversity constraints
-        for idx, similarity, place in place_scores:
-            if len(selected_places) >= top_k:
-                break
-                
-            place_category = place.get('category', 'unknown')
-            category_count = category_counts.get(place_category, 0)
-            
-            # Allow high-similarity places even if category is full, but with lower priority
-            if category_count < max_per_category or similarity > 0.4:
-                selected_places.append(place)
-                category_counts[place_category] = category_count + 1
-        
-        # Second pass: fill remaining slots with diverse categories if needed
-        if len(selected_places) < top_k:
-            for idx, similarity, place in place_scores:
-                if len(selected_places) >= top_k:
-                    break
-                    
-                if place not in selected_places:
-                    place_category = place.get('category', 'unknown')
-                    # Prioritize categories we don't have much of
-                    if category_counts.get(place_category, 0) <= 1:
-                        selected_places.append(place)
-                        category_counts[place_category] = category_counts.get(place_category, 0) + 1
-        
-        logger.info(f"Vector search selected {len(selected_places)} places out of {len(places)}")
-        if place_scores:
-            top_scores = [score for _, score, _ in place_scores[:5]]
-            logger.info(f"Top similarity scores: {top_scores}")
-        
-        # Log category diversity for debugging
-        selected_categories = {}
-        for place in selected_places:
-            cat = place.get('category', 'unknown')
-            selected_categories[cat] = selected_categories.get(cat, 0) + 1
-        logger.info(f"Category diversity: {selected_categories}")
-        
-        # Log selected place names for debugging
-        selected_names = [place.get('name', 'Unknown') for place in selected_places]
-        logger.info(f"Selected places: {selected_names}")
-        
-        return selected_places
+        # Sort by similarity (highest first)
+        scored_places.sort(key=lambda x: x[0], reverse=True)
+        return [place for score, place in scored_places]
         
     except Exception as e:
-        logger.error(f"Error in vector search: {e}")
-        import traceback
-        logger.error(f"Full traceback: {traceback.format_exc()}")
+        logger.error(f"Error in simple vector scoring: {e}")
         return places
+
+async def vector_search_places(places: List[Dict[str, Any]], query: str, top_k: int = None) -> List[Dict[str, Any]]:
+    """
+    Updated to use the new preference-based system.
+    This will be called with preferences from the frontend.
+    """
+    # For backward compatibility, if no preferences are provided, use defaults
+    default_preferences = {
+        'must_include': [],
+        'max_places': top_k or 12,
+        'balance_mode': 'balanced'
+    }
+    
+    return await preference_based_selection(places, default_preferences, query)
 
 def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """
@@ -240,18 +363,17 @@ async def optimize_place_order(
     start_time: str, 
     prompt_text: str | None = None, 
     travel_mode: str = "walking",
-    end_time: str = "19:00"
+    end_time: str = "19:00",
+    preferences: Dict[str, Any] | None = None
 ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
-    """
-    Use AI to optimize the order of places and get a detailed recommendation.
-    Now includes vector search filtering for better optimization.
-    
+    """    
     Args:
         places: List of place objects with location data
         start_time: Start time for the schedule in HH:MM format
         prompt_text: Optional custom prompt for the AI
         travel_mode: Mode of transportation (walking, driving, bicycling, transit)
         end_time: End time for the schedule in HH:MM format
+        preferences: Optional user preferences for place selection
         
     Returns:
         A tuple containing:
@@ -262,16 +384,49 @@ async def optimize_place_order(
         if len(places) <= 1:
             return places, None
         
-        logger.info(f"Optimizing order for {len(places)} places using vector search + AI")
+        logger.info(f"Optimizing order for {len(places)} places")
         
-        # Step 1: Vector search filtering (if user provided a meaningful prompt)
-        filtered_places = places
-        if prompt_text and len(prompt_text.strip()) > 10:  # Only use vector search for substantial prompts
-            filtered_places = await vector_search_places(places, prompt_text)
+        current_location = None
+        other_places = places
         
-        # Step 2: AI optimization on the filtered places
-        # AI should still select the best subset for a perfect day
-        return await ai_optimization(filtered_places, start_time, prompt_text, travel_mode, end_time) 
+        # Extract current location if it exists
+        if places and places[0].get("id") == "current-location":
+            current_location = places[0]
+            other_places = places[1:]  # Exclude current location from optimization
+            logger.info("Found current location - will preserve as starting point")
+        
+        # Step 1: Use preference-based selection instead of complex vector search
+        filtered_other_places = other_places
+        if preferences or (prompt_text and len(prompt_text.strip()) > 10):
+            # Convert preferences to the format expected by preference_based_selection
+            if not preferences:
+                # Fallback: create basic preferences from prompt if no explicit preferences
+                preferences = {
+                    'must_include': [],
+                    'max_places': 12,
+                    'balance_mode': 'balanced'
+                }
+            
+            filtered_other_places = await preference_based_selection(
+                other_places, 
+                preferences, 
+                prompt_text or ""
+            )
+            logger.info(f"Preference-based selection filtered from {len(other_places)} to {len(filtered_other_places)} places")
+        
+        # Step 2: AI optimization (current location will be handled separately)
+        optimized_other_places, day_overview = await ai_optimization(
+            filtered_other_places, start_time, prompt_text, travel_mode, end_time
+        )
+        
+        # Step 3: Combine results - current location always first
+        if current_location:
+            final_places = [current_location] + optimized_other_places
+            logger.info(f"Final schedule: current location + {len(optimized_other_places)} optimized places")
+        else:
+            final_places = optimized_other_places
+        
+        return final_places, day_overview
         
     except Exception as e:
         logger.error(f"Error in optimize_place_order: {e}")
@@ -455,11 +610,9 @@ async def ai_optimization(
                 # Filter to only include selected places
                 filtered_places = [places[i] for i in valid_selected_indices]
                 
-                # Now map the ordered_indices to these filtered places
-                # First, create a mapping from original indices to new position in filtered list
+                # Map ordered_indices to filtered places
                 original_to_filtered = {idx: i for i, idx in enumerate(valid_selected_indices)}
                 
-                # Map ordered_indices through this mapping
                 filtered_ordered_indices = []
                 for idx in ordered_indices:
                     if isinstance(idx, int) and idx in original_to_filtered:

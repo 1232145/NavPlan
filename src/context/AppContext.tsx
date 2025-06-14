@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Place, Schedule } from '../types';
+import { Place, Schedule, Coordinates } from '../types';
 import api from '../services/api/axios';
 import { archivedListService } from '../services/archivedListService';
 import { scheduleService } from '../services/scheduleService';
@@ -21,7 +21,9 @@ interface AppContextType {
     places?: Place[],
     dayOverviewForUpdate?: string,
     totalPlaces?: number,
-    endTime?: string
+    endTime?: string,
+    includeCurrentLocation?: boolean,
+    preferences?: any
   ) => Promise<void>;
   generateLocationBasedSchedule: (
     latitude: number,
@@ -33,6 +35,7 @@ interface AppContextType {
       start_time?: string;
       end_time?: string;
       categories?: string[];
+      includeCurrentLocation?: boolean;
     }
   ) => Promise<void>;
   searchResults: Place[];
@@ -42,6 +45,8 @@ interface AppContextType {
   checkSession: () => Promise<boolean>;
   isLoading: boolean;
   loadingMessage: string;
+  currentLocation: Coordinates | null;
+  requestLocationPermission: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -58,10 +63,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
+  const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
 
   useEffect(() => {
     const initSessionCheck = async () => {
       await checkSession();
+      // Request location permission after user session is established
+      await requestLocationPermission();
     };
     initSessionCheck();
   }, []);
@@ -122,11 +130,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     places?: Place[],
     dayOverviewForUpdate?: string,
     totalPlaces?: number,
-    endTime: string = "19:00"
+    endTime: string = "19:00",
+    includeCurrentLocation: boolean = false,
+    preferences?: any
   ) => {
     setIsLoading(true);
 
-    const placesToUse = places || favoritePlaces;
+    let placesToUse = places || favoritePlaces;
+    
+    // If including current location, create a place object for it and prepend to the list
+    if (includeCurrentLocation && currentLocation) {
+      const currentLocationPlace: Place = {
+        id: 'current-location',
+        name: 'Your Current Location',
+        location: currentLocation,
+        address: 'Starting point',
+        placeType: 'point_of_interest',
+        userAdded: true,
+        note: 'Starting location for this route'
+      };
+      placesToUse = [currentLocationPlace, ...placesToUse];
+    }
+    
     const isUpdate = !!dayOverviewForUpdate;
 
     if (isUpdate) {
@@ -152,7 +177,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         prompt,
         dayOverviewForUpdate,
         totalPlaces,
-        endTime
+        endTime,
+        preferences
       );
 
       setCurrentSchedule(schedule);
@@ -185,6 +211,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       start_time?: string;
       end_time?: string;
       categories?: string[];
+      includeCurrentLocation?: boolean;
     } = {}
   ) => {
     setIsLoading(true);
@@ -214,7 +241,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           start_time: options.start_time || '09:00',
           end_time: options.end_time || '19:00',
           categories: options.categories || null,
-          max_places: 20
+          max_places: 20,
+          include_current_location: options.includeCurrentLocation || false
         });
 
         // Clear all timers
@@ -248,6 +276,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [user]);
 
+  const requestLocationPermission = useCallback(async (): Promise<void> => {
+    // Don't request again if we already have location
+    if (currentLocation) return;
+    
+    try {
+      if (!navigator.geolocation) {
+        console.warn('Geolocation is not supported by this browser.');
+        return;
+      }
+
+      const coords = await new Promise<Coordinates>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const coords: Coordinates = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+            resolve(coords);
+          },
+          (error) => {
+            console.warn('Location permission denied or failed:', error);
+            reject(error);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 600000 // 10 minutes
+          }
+        );
+      });
+      
+      setCurrentLocation(coords);
+      console.log('Location permission granted and saved');
+    } catch (error) {
+      // Silently fail - user can still use the app without location
+      console.warn('Failed to get location:', error);
+    }
+  }, [currentLocation]);
+
   // Show loading screen when app is loading
   if (isLoading) {
     return <LoadingScreen message={loadingMessage} />;
@@ -272,6 +339,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       checkSession,
       isLoading,
       loadingMessage,
+      currentLocation,
+      requestLocationPermission,
     }}>
       {children}
     </AppContext.Provider>

@@ -2,23 +2,10 @@
 Must implement:
 
 functionality:
-AI estimates timing at each place.
-selective place in favorite list (currently choose all).
-Add AI prompt
-
 link google account
-add the option of first place as current location (this will act as the 1st place in the routes)
+add the option of first place as current location (this will act as the 1st place in the routes) -> in progress
 
-Modify schema to attach schedule
+Modify schema to attach schedule (High priority)
 Import from google maps your archived list
-Move generate schedules to my archive list (implemented with mongoDB vector search)
 
 AI chat for schedule?
-
-frontend:
-upon hovering item in search results/saved place, it should highlight in map
-google ava when sign in
-saved list but still appear in search
-
-generate schedule based on our dataset (put below "Start Exploring" in search result tab)
-public data set will be backend

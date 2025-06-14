@@ -40,6 +40,13 @@ class Schedule(BaseModel):
     total_distance_meters: int
     day_overview: Optional[str] = None
 
+class UserPreferences(BaseModel):
+    """Model for user preferences in schedule generation"""
+    must_include: List[str] = []  # Categories that must be included: ['restaurants', 'cafes', 'museums', etc.]
+    balance_mode: str = "balanced"  # 'focused', 'balanced', 'diverse'
+    max_places: int = 12  # Maximum number of places in schedule
+    meal_requirements: bool = False  # If true, ensure breakfast/lunch/dinner coverage
+
 class ScheduleRequest(BaseModel):
     """Model for schedule generation request"""
     places: List[Dict[str, Any]] = []
@@ -48,6 +55,7 @@ class ScheduleRequest(BaseModel):
     travel_mode: str = "walking"  # Default travel mode (walking, driving, bicycling, transit) 
     prompt: Optional[str] = None  # Optional custom prompt for AI optimization
     day_overview: Optional[str] = None # Optional AI-generated day overview
+    preferences: Optional[UserPreferences] = None  # User preferences for place selection
 
 class LocationScheduleRequest(ScheduleRequest):
     """Model for location-based schedule generation request that extends ScheduleRequest"""
@@ -56,6 +64,7 @@ class LocationScheduleRequest(ScheduleRequest):
     radius_meters: int = 5000  # Default 5km radius
     categories: Optional[List[str]] = None  # Optional category filters
     max_places: int = 20  # Maximum places to consider from public POI data
+    include_current_location: bool = False  # Whether to include current location as starting point
 
 # Enhanced Models for MongoDB Challenge - Public Dataset Integration
 
