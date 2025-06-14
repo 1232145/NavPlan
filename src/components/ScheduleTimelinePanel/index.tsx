@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
+import { Schedule } from '../../types';
 import './index.css';
 import { MdLocationOn, MdCategory } from 'react-icons/md';
 
@@ -45,10 +46,19 @@ const PLACE_TYPE_LABELS: { [key: string]: string } = {
 
 interface ScheduleTimelinePanelProps {
   travelMode: string;
+  schedule?: Schedule;
+  isViewingSaved?: boolean;
 }
 
-const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({ travelMode }) => {
+const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({ 
+  travelMode, 
+  schedule: propSchedule,
+  isViewingSaved = false 
+}) => {
   const { currentSchedule } = useAppContext();
+  
+  // Use provided schedule or fall back to current schedule
+  const displaySchedule = propSchedule || currentSchedule;
 
   // Format place type to be more readable
   const formatPlaceType = (placeType: string): string => {
@@ -58,7 +68,7 @@ const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({ travelMod
       ).join(' ');
   };
 
-  if (!currentSchedule) {
+  if (!displaySchedule) {
     return (
       <div className="schedule-timeline-panel expanded">
         <div className="empty-state">
@@ -71,11 +81,14 @@ const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({ travelMod
   return (
     <div className="schedule-timeline-panel expanded">
       <div className="schedule-summary">
-        <div>Total time: {Math.floor(currentSchedule.total_duration_minutes / 60)}h {currentSchedule.total_duration_minutes % 60}m</div>
-        <div>Total distance: {(currentSchedule.total_distance_meters / 1000).toFixed(1)} km</div>
+        <div>Total time: {Math.floor(displaySchedule.total_duration_minutes / 60)}h {displaySchedule.total_duration_minutes % 60}m</div>
+        <div>Total distance: {(displaySchedule.total_distance_meters / 1000).toFixed(1)} km</div>
+        {isViewingSaved && (
+          <div className="saved-schedule-indicator">📁 Saved Schedule</div>
+        )}
       </div>
       <div className="schedule-items-list">
-        {currentSchedule.items.map((item, index) => (
+        {displaySchedule.items.map((item, index) => (
           <div key={item.place_id} className="schedule-item-card">
             <div className="schedule-time-infor">
               <div className="timeline-time">{item.start_time}</div>

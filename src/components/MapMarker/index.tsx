@@ -72,15 +72,30 @@ const MapMarker: React.FC<MapMarkerProps> = ({
         const markerColors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#FF9800', '#9C27B0', '#795548'];
         const colorIndex = index !== undefined ? index % markerColors.length : 0;
         
-        return {
-          path: google.maps.SymbolPath.CIRCLE,
-          fillColor: markerColors[colorIndex],
-          fillOpacity: 1,
-          strokeWeight: 2,
-          strokeColor: '#FFFFFF',
-          scale: 15,
-          labelOrigin: new google.maps.Point(0, 0),
-        };
+        // Check if Google Maps API is available
+        if (typeof window !== 'undefined' && window.google && window.google.maps) {
+          return {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            fillColor: markerColors[colorIndex],
+            fillOpacity: 1,
+            strokeWeight: 2,
+            strokeColor: '#FFFFFF',
+            scale: 15,
+            labelOrigin: new window.google.maps.Point(0, 0),
+          };
+        } else {
+          // Fallback to SVG marker if Google Maps API not ready
+          return {
+            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+              <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="15" cy="15" r="15" fill="${markerColors[colorIndex]}" stroke="#FFFFFF" stroke-width="2"/>
+                <text x="15" y="20" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="12" font-weight="bold">${index !== undefined ? index + 1 : ''}</text>
+              </svg>
+            `),
+            scaledSize: new window.google.maps.Size(30, 30),
+            anchor: new window.google.maps.Point(15, 15),
+          };
+        }
       }
       default:
         // For default markers, only customize when highlighted
@@ -121,7 +136,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({
       onMouseOut={handleMouseOut}
       icon={getMarkerIcon()}
       label={getLabel()}
-      zIndex={isHighlighted ? 1000 : 1}
+      zIndex={isHighlighted ? 2 : 1}
     />
   );
 };

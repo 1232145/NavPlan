@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import './index.css';
 import { Button } from '../../components/Button';
 import { useNavigate } from 'react-router-dom';
-import { ArchivedList, Place } from '../../types';
-import { archivedListService } from '../../services/archivedListService';
+import { ArchivedList, Place, SavedSchedule } from '../../types';
+import { useArchiveSchedules, useArchivedLists } from '../../hooks';
 import CategoryFilter from '../../components/CategoryFilter';
 import ScheduleGenerationDialog, { ScheduleGenerationOptions } from '../../components/ScheduleGenerationDialog';
+import SaveScheduleDialog from '../../components/SaveScheduleDialog';
+import ScheduleSlots from '../../components/ScheduleSlots';
 import LoadingScreen from '../../components/LoadingScreen';
 import NavbarColumn from '../../components/NavbarColumn';
 import { 
@@ -26,7 +28,7 @@ import {
   Save,
   X,
   Eye,
-  EyeOff
+  EyeOff,
 } from 'lucide-react';
 
 // Helper to get the icon for a place type
@@ -106,44 +108,43 @@ const filterPlacesByCategories = (places: Place[], selectedCategories: string[])
 
 const ArchivedListsPage: React.FC = () => {
   const { generateSchedule } = useAppContext();
-  const [archivedLists, setArchivedLists] = useState<ArchivedList[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string[]>([]);
   const navigate = useNavigate();
+  
+  // Archive list management
+  const {
+    archivedLists,
+    loading,
+    error,
+    expanded,
+    editingList,
+    editedPlaces,
+    placesToggles,
+    deleteConfirmOpen,
+    listToDelete,
+    deleteLoading,
+    fetchArchivedLists,
+    toggleExpanded,
+    startEditing,
+    saveEdit,
+    cancelEdit,
+    doneEditing,
+    removePlace,
+    togglePlace,
+    hasUnsavedChanges,
+    getEnabledPlaces,
+    startDelete,
+    confirmDelete,
+    cancelDelete,
+    clearError
+  } = useArchivedLists();
+  
+  // Archive schedule management
+  const archiveSchedules = useArchiveSchedules();
   
   // Schedule modal state for choosing start time
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [selectedList, setSelectedList] = useState<ArchivedList | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['food', 'cafe', 'attraction', 'outdoor', 'shopping', 'other']);
-
-  // Edit mode state
-  const [editingList, setEditingList] = useState<string | null>(null);
-  const [editedPlaces, setEditedPlaces] = useState<Place[]>([]);
-  const [placesToggles, setPlacesToggles] = useState<Record<string, boolean>>({});
-  
-  // Delete confirmation state
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [listToDelete, setListToDelete] = useState<ArchivedList | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  useEffect(() => {
-    fetchArchivedLists();
-  }, []);
-
-  const fetchArchivedLists = async () => {
-    try {
-      setLoading(true);
-      const lists = await archivedListService.getLists();
-      setArchivedLists(lists);
-      setError(null);
-    } catch (err) {
-      setError('Failed to load archived lists');
-      console.error('Error fetching archived lists:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleGenerateSchedule = (list: ArchivedList) => {
     // Get enabled places (considering edit mode toggles)
@@ -190,7 +191,8 @@ const ArchivedListsPage: React.FC = () => {
           selectedList.places.length,
           options.endTime,
           options.includeCurrentLocation,
-          options.preferences
+          options.preferences,
+          selectedList
         );
         navigate('/schedule');
       }
@@ -199,132 +201,85 @@ const ArchivedListsPage: React.FC = () => {
 
   // Delete list handlers
   const handleDeleteList = (list: ArchivedList) => {
-    setListToDelete(list);
-    setDeleteConfirmOpen(true);
+    startDelete(list);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!listToDelete) return;
-    
-    try {
-      setDeleteLoading(true);
-      await archivedListService.deleteList(listToDelete.id);
-      setArchivedLists(prev => prev.filter(list => list.id !== listToDelete.id));
-      setDeleteConfirmOpen(false);
-      setListToDelete(null);
-    } catch (err) {
-      console.error('Error deleting list:', err);
-      setError('Failed to delete list');
-    } finally {
-      setDeleteLoading(false);
-    }
+    await confirmDelete();
   };
 
   const handleDeleteCancel = () => {
-    setDeleteConfirmOpen(false);
-    setListToDelete(null);
+    cancelDelete();
   };
 
   // Edit list handlers
   const handleEditList = (list: ArchivedList) => {
-    setEditingList(list.id);
-    setEditedPlaces([...list.places]);
-    setPlacesToggles(prev => {
-      const newToggles = { ...prev };
-      list.places.forEach(place => {
-        // Only set to true if not already defined
-        if (newToggles[place.id] === undefined) {
-          newToggles[place.id] = true;
-        }
-      });
-      return newToggles;
-    });
-  };
-
-  // Check if there are unsaved changes (only for permanent changes like removing places)
-  const hasUnsavedChanges = (list: ArchivedList): boolean => {
-    if (editingList !== list.id) return false;
-    return editedPlaces.length !== list.places.length;
+    startEditing(list);
   };
 
   const handleSaveEdit = async () => {
-    if (!editingList) return;
-    
-    const listToUpdate = archivedLists.find(list => list.id === editingList);
-    if (!listToUpdate) return;
-
-    try {
-      await archivedListService.updateList(
-        editingList,
-        listToUpdate.name,
-        editedPlaces,
-        listToUpdate.note
-      );
-      
-      // Update local state
-      setArchivedLists(prev => prev.map(list => 
-        list.id === editingList 
-          ? { ...list, places: editedPlaces }
-          : list
-      ));
-      
-      setEditingList(null);
-      setEditedPlaces([]);
-      setPlacesToggles({});
-    } catch (err) {
-      console.error('Error updating list:', err);
-      setError('Failed to update list');
-    }
+    await saveEdit();
   };
 
   const handleCancelEdit = () => {
-    // If there are unsaved changes, restore the original places
-    if (editingList) {
-      const originalList = archivedLists.find(list => list.id === editingList);
-      if (originalList && editedPlaces.length !== originalList.places.length) {
-        setEditedPlaces([...originalList.places]);
-      }
-    }
-    
-    setEditingList(null);
-    setEditedPlaces([]);
-    setPlacesToggles({});
+    cancelEdit();
   };
 
   const handleDoneEditing = () => {
-    // Exit edit mode but preserve place toggles for schedule generation
-    setEditingList(null);
-    setEditedPlaces([]);
-    // Keep placesToggles for schedule generation
+    doneEditing();
   };
 
   const handleRemovePlace = (placeId: string) => {
-    setEditedPlaces(prev => prev.filter(place => place.id !== placeId));
+    removePlace(placeId);
   };
 
   const handleTogglePlace = (placeId: string) => {
-    setPlacesToggles(prev => {
-      const currentValue = prev[placeId];
-      // If undefined (first time), default to true, then toggle
-      const newValue = currentValue === undefined ? false : !currentValue;
-      return {
-        ...prev,
-        [placeId]: newValue
-      };
-    });
+    togglePlace(placeId);
   };
 
-  const getEnabledPlaces = (list: ArchivedList): Place[] => {
-    // If we have toggles for this list, use them regardless of edit mode
-    const hasToggles = Object.keys(placesToggles).some(placeId => 
-      list.places.some(place => place.id === placeId)
-    );
-    
-    if (hasToggles) {
-      return list.places.filter(place => placesToggles[place.id] !== false);
+  const handleViewSchedule = async (schedule: SavedSchedule) => {
+    try {
+      // Set the schedule in context and navigate to schedule page
+      // This will display the saved schedule
+      console.log('Viewing saved schedule:', schedule);
+      
+      // TODO: Update AppContext to handle viewing saved schedules
+      // For now, we'll navigate to schedule page
+      // The schedule page should be updated to handle saved schedules
+      navigate('/schedule', { state: { savedSchedule: schedule } });
+    } catch (err) {
+      console.error('Failed to view schedule:', err);
     }
-    // Normal mode, return all places
-    return list.places;
+  };
+
+  const handleDeleteSchedule = async (listId: string, scheduleId: string) => {
+    try {
+      await archiveSchedules.deleteSchedule(listId, scheduleId);
+      // Refresh the lists to show updated schedule count
+      await fetchArchivedLists();
+    } catch (err) {
+      console.error('Failed to delete schedule:', err);
+    }
+  };
+
+  const handleToggleFavorite = async (listId: string, scheduleId: string, isFavorite: boolean) => {
+    try {
+      await archiveSchedules.updateScheduleMetadata(listId, scheduleId, { is_favorite: isFavorite });
+      // Refresh the lists to show updated favorite status
+      await fetchArchivedLists();
+    } catch (err) {
+      console.error('Failed to update schedule:', err);
+    }
+  };
+
+  const handleSaveScheduleWrapper = async (options: any) => {
+    try {
+      await archiveSchedules.saveScheduleToArchive(options);
+      // Refresh the lists to show updated schedule count
+      await fetchArchivedLists();
+    } catch (err) {
+      console.error('Failed to save schedule:', err);
+    }
   };
 
   // Show loading screen for initial list loading
@@ -354,6 +309,17 @@ const ArchivedListsPage: React.FC = () => {
           onConfirm={handleScheduleConfirm}
           title="Generate Schedule"
           placeCount={selectedList?.places.length}
+        />
+
+        {/* Save Schedule Dialog */}
+        <SaveScheduleDialog
+          open={archiveSchedules.saveDialogOpen}
+          onClose={archiveSchedules.closeSaveDialog}
+          onSave={handleSaveScheduleWrapper}
+          selectedList={archiveSchedules.selectedList}
+          suggestedSlot={archiveSchedules.scheduleSlotSelection}
+          loading={archiveSchedules.isSavingSchedule}
+          error={archiveSchedules.error}
         />
 
         {/* Delete Confirmation Dialog */}
@@ -439,13 +405,7 @@ const ArchivedListsPage: React.FC = () => {
                   <div className="archived-list-header">
                     <div 
                       className="archived-list-header-clickable"
-                      onClick={() => {
-                        if (expanded.includes(list.id)) {
-                          setExpanded(expanded.filter(id => id !== list.id));
-                        } else {
-                          setExpanded([...expanded, list.id]);
-                        }
-                      }}
+                      onClick={() => toggleExpanded(list.id)}
                     >
                       <div className="archived-list-icon">
                         <Map size={20} />
@@ -563,13 +523,7 @@ const ArchivedListsPage: React.FC = () => {
                       <button 
                         className="archived-expand-button"
                         aria-label={expanded.includes(list.id) ? "Collapse" : "Expand"}
-                        onClick={() => {
-                          if (expanded.includes(list.id)) {
-                            setExpanded(expanded.filter(id => id !== list.id));
-                          } else {
-                            setExpanded([...expanded, list.id]);
-                          }
-                        }}
+                        onClick={() => toggleExpanded(list.id)}
                       >
                         <span className="archived-expand-icon">{expanded.includes(list.id) ? '▼' : '▶'}</span>
                       </button>
@@ -595,8 +549,17 @@ const ArchivedListsPage: React.FC = () => {
                           </p>
                         </div>
                       )}
-                      
 
+                      {/* Schedule Slots */}
+                      {list.saved_schedules.length > 0 && (
+                        <ScheduleSlots
+                          list={list}
+                          onViewSchedule={handleViewSchedule}
+                          onDeleteSchedule={(scheduleId) => handleDeleteSchedule(list.id, scheduleId)}
+                          onToggleFavorite={(scheduleId, isFavorite) => handleToggleFavorite(list.id, scheduleId, isFavorite)}
+                          loading={archiveSchedules.isSavingSchedule}
+                        />
+                      )}
                       
                       {filteredPlaces.length === 0 ? (
                         <div className="archived-list-empty">No places match the selected categories.</div>

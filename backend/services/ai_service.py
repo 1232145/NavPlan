@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Tuple, Optional
 import httpx
 from config import GOOGLE_API_KEY, OPENROUTER_API_KEY
 from db import get_database
+from db.models import TravelMode, BalanceMode
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -362,7 +363,7 @@ async def optimize_place_order(
     places: List[Dict[str, Any]], 
     start_time: str, 
     prompt_text: str | None = None, 
-    travel_mode: str = "walking",
+    travel_mode: TravelMode = TravelMode.WALKING,
     end_time: str = "19:00",
     preferences: Dict[str, Any] | None = None
 ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
@@ -492,7 +493,7 @@ async def ai_optimization(
     places: List[Dict[str, Any]], 
     start_time: str,
     prompt_text: str | None = None,
-    travel_mode: str = "walking",
+    travel_mode: TravelMode = TravelMode.WALKING,
     end_time: str = "19:00"
 ) -> Tuple[List[Dict[str, Any]], Optional[str]]:
     """
@@ -698,7 +699,7 @@ def create_prompt(
     place_data: List[Dict[str, Any]], 
     start_time: str, 
     prompt_text: str | None = None, 
-    travel_mode: str = "walking",
+    travel_mode: TravelMode = TravelMode.WALKING,
     select_subset: bool = True,
     place_count: int = 0,
     end_time: str = "19:00"
@@ -807,7 +808,7 @@ Places (enriched with public data insights):
 
 CRITICAL REQUIREMENTS:
 1. User preferences: {prompt_text if prompt_text else "Prioritize a logical flow with varied activities and well-spaced meals throughout the day."}
-2. Travel mode: {travel_mode}
+2. Travel mode: {travel_mode.value if isinstance(travel_mode, TravelMode) else travel_mode}
 3. TIME CONSTRAINT: All activities MUST end by {end_time}
 4. MEAL SPACING: NEVER schedule restaurants consecutively - always have 2+ non-food places between meals
 5. QUALITY OVER QUANTITY: End schedule early rather than repeating similar venue types

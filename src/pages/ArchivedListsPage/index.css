@@ -455,6 +455,33 @@
   box-shadow: var(--shadow-md);
 }
 
+.save-schedule-button-header {
+  background: linear-gradient(135deg, 
+    var(--color-primary-500) 0%, 
+    var(--color-primary-600) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-primary-600);
+}
+
+.save-schedule-button-header:hover {
+  background: linear-gradient(135deg, 
+    var(--color-primary-600) 0%, 
+    var(--color-primary-700) 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
 
 
 /* Places grid and cards */

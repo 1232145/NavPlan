@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Tuple, Optional
 import httpx
 import math
 from config import GOOGLE_MAPS_API_KEY
-from db.models import Schedule, ScheduleItem, RouteSegment
+from db.models import Schedule, ScheduleItem, RouteSegment, Coordinates, TravelMode
 import json
 from fastapi import HTTPException
 
@@ -35,16 +35,16 @@ EARTH_RADIUS_KM = 6371  # Earth radius in kilometers for distance calculations
 
 # Speed estimates for fallback calculations when Google API is unavailable
 TRAVEL_SPEED_KM_PER_HOUR = {
-    "walking": 5.0,    # Average walking speed
-    "bicycling": 15.0, # Average cycling speed
-    "driving": 40.0,   # Average urban driving speed
-    "transit": 25.0    # Average transit speed
+    TravelMode.WALKING: 5.0,    # Average walking speed
+    TravelMode.BICYCLING: 15.0, # Average cycling speed
+    TravelMode.DRIVING: 40.0,   # Average urban driving speed
+    TravelMode.TRANSIT: 25.0    # Average transit speed
 }
 
 async def generate_schedule(
     places: List[Dict[str, Any]], 
     start_time_str: str, 
-    travel_mode: str = "walking",
+    travel_mode: TravelMode = TravelMode.WALKING,
     day_overview: Optional[str] = None,
     end_time_str: str = "19:00"
 ) -> Schedule:
@@ -183,10 +183,10 @@ async def generate_schedule(
                     schedule_items.append(schedule_item)
                     break
                 
-                # Create the route segment
+                # Create the route segment with proper Coordinates objects
                 route_segment = RouteSegment(
-                    start_location={"lat": lat, "lng": lng},
-                    end_location={"lat": next_lat, "lng": next_lng},
+                    start_location=Coordinates(lat=lat, lng=lng),
+                    end_location=Coordinates(lat=next_lat, lng=next_lng),
                     distance={"text": format_distance(distance_meters), "value": distance_meters},
                     duration={"text": format_duration(travel_time_minutes * 60), "value": travel_time_minutes * 60},
                     polyline=polyline
@@ -223,8 +223,8 @@ async def generate_schedule(
                     lng = last_location.get('lng', 0)
                     
                     last_item.travel_to_next = RouteSegment(
-                        start_location={"lat": lat, "lng": lng},
-                        end_location={"lat": lat, "lng": lng},
+                        start_location=Coordinates(lat=lat, lng=lng),
+                        end_location=Coordinates(lat=lat, lng=lng),
                         distance={"text": "0 m", "value": 0},
                         duration={"text": "0 mins", "value": 0},
                         polyline=""
@@ -259,7 +259,7 @@ def calculate_total_duration(start_datetime: datetime, end_datetime: datetime) -
     duration = end_datetime - start_datetime
     return int(duration.total_seconds() / 60)
 
-async def calculate_travel_data(places: List[Dict[str, Any]], travel_mode: str = "walking") -> List[Tuple[int, int, str]]:
+async def calculate_travel_data(places: List[Dict[str, Any]], travel_mode: TravelMode = TravelMode.WALKING) -> List[Tuple[int, int, str]]:
     """
     Calculate travel times, distances and routes between sequential places using Google Maps API
     
@@ -274,11 +274,8 @@ async def calculate_travel_data(places: List[Dict[str, Any]], travel_mode: str =
         logger.warning("GOOGLE_MAPS_API_KEY not set, using distance estimation")
         return []
     
-    # Validate travel mode
-    valid_modes = ["walking", "driving", "bicycling", "transit"]
-    if travel_mode not in valid_modes:
-        logger.warning(f"Invalid travel mode: {travel_mode}, using walking")
-        travel_mode = "walking"
+    # Convert TravelMode enum to string for Google API
+    travel_mode_str = travel_mode.value if isinstance(travel_mode, TravelMode) else travel_mode
     
     travel_data = []
     
@@ -315,7 +312,7 @@ async def calculate_travel_data(places: List[Dict[str, Any]], travel_mode: str =
                     params={
                         "origin": origin_str,
                         "destination": destination_str,
-                        "mode": travel_mode,
+                        "mode": travel_mode_str,
                         "key": GOOGLE_MAPS_API_KEY
                     }
                 )
@@ -364,13 +361,13 @@ async def calculate_travel_data(places: List[Dict[str, Any]], travel_mode: str =
     
     return travel_data
 
-def get_fallback_duration(travel_mode: str) -> int:
+def get_fallback_duration(travel_mode: TravelMode) -> int:
     """Get a reasonable fallback duration in minutes based on travel mode"""
     fallback_mins = {
-        "walking": 20,
-        "bicycling": 12,
-        "driving": 10,
-        "transit": 15
+        TravelMode.WALKING: 20,
+        TravelMode.BICYCLING: 12,
+        TravelMode.DRIVING: 10,
+        TravelMode.TRANSIT: 15
     }
     return fallback_mins.get(travel_mode, 15)
 
@@ -411,7 +408,7 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     
     return c * EARTH_RADIUS_KM
 
-def estimate_travel_time(distance_km: float, travel_mode: str = "walking") -> int:
+def estimate_travel_time(distance_km: float, travel_mode: TravelMode = TravelMode.WALKING) -> int:
     """
     Estimate travel time in minutes based on distance and travel mode
     
@@ -423,14 +420,14 @@ def estimate_travel_time(distance_km: float, travel_mode: str = "walking") -> in
         Estimated travel time in minutes
     """
     # Get speed based on travel mode
-    speed = TRAVEL_SPEED_KM_PER_HOUR.get(travel_mode, TRAVEL_SPEED_KM_PER_HOUR["walking"])
+    speed = TRAVEL_SPEED_KM_PER_HOUR.get(travel_mode, TRAVEL_SPEED_KM_PER_HOUR[TravelMode.WALKING])
     
     # Calculate time in hours
     travel_time_hours = distance_km / speed
     
     # Convert to minutes and ensure a minimum reasonable time
     travel_mins = math.ceil(travel_time_hours * 60)
-    min_time = 5 if travel_mode == "walking" else 3  # Minimum reasonable travel time
+    min_time = 5 if travel_mode == TravelMode.WALKING else 3  # Minimum reasonable travel time
     
     return max(min_time, travel_mins)
 

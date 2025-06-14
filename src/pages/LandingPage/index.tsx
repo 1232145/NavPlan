@@ -1,72 +1,20 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React from 'react';
 import './index.css';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
-import { Map, Navigation, Calendar, Heart, Star, MapPin } from 'lucide-react';
-import api from '../../services/api/axios';
-
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+import { Map, Navigation, Calendar, Heart, MapPin, Star } from 'lucide-react';
+import { useGoogleAuth } from '../../hooks';
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, setUser } = useAppContext();
-  const buttonDiv = useRef<HTMLDivElement>(null);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
-  const [sdkError, setSdkError] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (user) return;
-    let timeout: ReturnType<typeof setTimeout>;
-    let errorTimeout: ReturnType<typeof setTimeout>;
-    function checkGoogleLoaded() {
-      // @ts-ignore
-      if (window.google && window.google.accounts && window.google.accounts.id && buttonDiv.current) {
-        setSdkLoaded(true);
-        setLoading(false);
-        setSdkError(false);
-        // @ts-ignore
-        window.google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: (response: any) => {
-            setAuthError(null);
-            handleGoogleSignIn(response.credential);
-          },
-        });
-        // @ts-ignore
-        window.google.accounts.id.renderButton(buttonDiv.current, {
-          theme: 'outline',
-          size: 'large',
-          width: 260,
-        });
-      } else {
-        timeout = setTimeout(checkGoogleLoaded, 200);
-      }
-    }
-    setLoading(true);
-    setSdkError(false);
-    checkGoogleLoaded();
-    errorTimeout = setTimeout(() => {
-      setSdkError(true);
-      setLoading(false);
-    }, 10000);
-    return () => {
-      clearTimeout(timeout);
-      clearTimeout(errorTimeout);
-    };
-  }, [user]);
-
-  async function handleGoogleSignIn(credential: string) {
-    try {
-      const res = await api.post('/auth/google', { token: credential });
-      setUser(res.data.user);
-      navigate('/');
-    } catch (err) {
-      setAuthError('Failed to authenticate with server.');
-      setUser(null);
-    }
-  }
+  const { user } = useAppContext();
+  const {
+    sdkLoaded,
+    sdkError,
+    loading,
+    authError,
+    buttonRef
+  } = useGoogleAuth();
 
   if (!user) {
     return (
@@ -121,7 +69,7 @@ export const LandingPage: React.FC = () => {
             </div>
           )}
           
-          <div ref={buttonDiv} className="google-signin-container"></div>
+          <div ref={buttonRef} className="google-signin-container"></div>
         </div>
       </div>
     );

@@ -366,19 +366,31 @@ const DirectionsMap: React.FC<DirectionsMapProps> = ({
   };
 
   // Convert schedule items to Place objects for markers
-  const schedulePlaces = schedule.items.map((item) => {
+  const schedulePlaces = schedule.items.map((item, index) => {
+    // First try to find the place in the places array by ID
     const place = places.find(p => p.id === item.place_id);
-    if (!place) {
-      // Create a placeholder place if not found
-      return {
-        id: item.place_id,
-        name: item.name,
-        location: item.travel_to_next?.start_location || DEFAULT_CENTER,
-        address: '',
-        placeType: ''
-      };
+    if (place) {
+      return place;
     }
-    return place;
+    
+    // If not found by ID, check if places array is already in schedule order (for saved schedules)
+    if (places.length === schedule.items.length && places[index]) {
+      return places[index];
+    }
+    
+    // Create a proper placeholder place if not found
+    const placeholderPlace = {
+      id: item.place_id,
+      name: item.name,
+      location: item.travel_to_next?.start_location || DEFAULT_CENTER,
+      address: item.address || '',
+      placeType: item.placeType || 'point_of_interest',
+      geometry: {
+        location: item.travel_to_next?.start_location || DEFAULT_CENTER
+      },
+      userAdded: false
+    };
+    return placeholderPlace;
   }).filter(Boolean) as Place[];
 
   return (

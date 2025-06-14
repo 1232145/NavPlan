@@ -14,6 +14,8 @@ interface AppContextType {
   archiveFavorites: (name?: string, note?: string) => Promise<void>;
   currentSchedule: Schedule | null;
   setCurrentSchedule: React.Dispatch<React.SetStateAction<Schedule | null>>;
+  sourceArchiveList: any | null;
+  setSourceArchiveList: React.Dispatch<React.SetStateAction<any | null>>;
   generateSchedule: (
     startTime: string,
     travelMode?: string,
@@ -23,7 +25,8 @@ interface AppContextType {
     totalPlaces?: number,
     endTime?: string,
     includeCurrentLocation?: boolean,
-    preferences?: any
+    preferences?: any,
+    sourceList?: any
   ) => Promise<void>;
   generateLocationBasedSchedule: (
     latitude: number,
@@ -59,6 +62,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return savedPlaces ? JSON.parse(savedPlaces) : [];
   });
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | null>(null);
+  const [sourceArchiveList, setSourceArchiveList] = useState<any | null>(null);
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -132,7 +136,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     totalPlaces?: number,
     endTime: string = "19:00",
     includeCurrentLocation: boolean = false,
-    preferences?: any
+    preferences?: any,
+    sourceList?: any
   ) => {
     setIsLoading(true);
 
@@ -182,6 +187,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
 
       setCurrentSchedule(schedule);
+      
+      // Set the source archive list if provided
+      if (sourceList) {
+        setSourceArchiveList(sourceList);
+      }
 
       if (!isUpdate) {
         setLoadingMessage('✅ Your optimized schedule is ready!');
@@ -330,6 +340,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       archiveFavorites,
       currentSchedule,
       setCurrentSchedule,
+      sourceArchiveList,
+      setSourceArchiveList,
       generateSchedule,
       generateLocationBasedSchedule,
       searchResults,
