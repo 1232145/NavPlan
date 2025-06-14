@@ -109,7 +109,7 @@ The application will be available at:
 
 ```
 BuildYourDay/
-├── src/                          # Frontend React application
+├── src/                         # Frontend React application
 │   ├── components/              # Reusable UI components
 │   ├── pages/                   # Page components
 │   ├── hooks/                   # Custom React hooks
