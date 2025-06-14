@@ -36,5 +36,11 @@ export const archivedListService = {
     await api.delete(`/archived-lists/${id}`);
     // Invalidate cache when a list is deleted
     cacheUtils.lists.invalidate();
+  },
+
+  // Force cache invalidation (useful when schedules are added/removed)
+  invalidateCache(): void {
+    console.log('Invalidating archived lists cache');
+    cacheUtils.lists.invalidate();
   }
 }; 

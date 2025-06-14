@@ -1,76 +1,12 @@
-/* Save Schedule Dialog Overlay */
-.save-schedule-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  backdrop-filter: blur(4px);
-  animation: fadeIn 0.2s ease-out;
-}
-
-/* Dialog Container */
-.save-schedule-dialog {
-  background: white;
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-2xl);
-  max-width: 520px;
-  width: 90%;
-  max-height: 90vh;
-  overflow: hidden;
-  animation: slideInScale 0.3s ease-out;
-}
-
-/* Header */
-.save-schedule-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-6);
-  border-bottom: 1px solid var(--color-secondary-200);
-  background: var(--color-primary-50);
-}
-
+/* Header - using shared modal styles */
 .save-schedule-title {
   display: flex;
   align-items: center;
   gap: var(--space-3);
 }
 
-.save-schedule-title h3 {
-  margin: 0;
-  font-size: var(--text-xl);
-  font-weight: 700;
-  color: var(--color-secondary-800);
-}
-
 .save-schedule-title svg {
   color: var(--color-primary-600);
-}
-
-.save-schedule-close {
-  background: none;
-  border: none;
-  color: var(--color-secondary-500);
-  cursor: pointer;
-  padding: var(--space-2);
-  border-radius: var(--radius-md);
-  transition: var(--transition-normal);
-}
-
-.save-schedule-close:hover:not(:disabled) {
-  background: var(--color-secondary-100);
-  color: var(--color-secondary-700);
-}
-
-.save-schedule-close:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* Content */
@@ -110,41 +46,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.form-group label {
-  font-weight: 600;
-  font-size: var(--text-sm);
-  color: var(--color-secondary-700);
-}
-
-.form-group input[type="text"] {
-  padding: var(--space-3);
-  border: 1px solid var(--color-secondary-300);
-  border-radius: var(--radius-lg);
-  font-size: var(--text-base);
-  transition: var(--transition-normal);
-}
-
-.form-group input[type="text"]:focus {
-  outline: none;
-  border-color: var(--color-primary-500);
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
-}
-
-.form-group input[type="text"].error {
-  border-color: var(--color-error-500);
-}
-
-.form-group input[type="text"]:disabled {
-  background: var(--color-secondary-50);
-  opacity: 0.7;
 }
 
 /* Travel Mode Grid */
@@ -246,13 +147,7 @@
   color: var(--color-primary-600);
 }
 
-/* Error Messages */
-.error-message {
-  color: var(--color-error-600);
-  font-size: var(--text-xs);
-  font-weight: 500;
-  margin-top: var(--space-1);
-}
+/* Error Messages - using shared styles */
 
 .save-schedule-error {
   background: var(--color-error-50);
@@ -294,22 +189,6 @@
   font-weight: 600;
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {

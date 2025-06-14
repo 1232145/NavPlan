@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Place } from '../../types';
+import { useImageError } from '../../hooks/useImageError';
 import './index.css';
 import confetti from 'canvas-confetti';
 import { Button } from '../Button';
@@ -15,7 +16,7 @@ export interface PlaceCardProps {
 export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, onRemoveFavorite, isSaved = false }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [showFullNote, setShowFullNote] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const { imageError, handleImageError } = useImageError();
 
   const handleAddToFavorites = () => {
     if (onAddToFavorites && !isSaved) {
@@ -67,10 +68,10 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, o
         <img
           src={place.photos[0]}
           alt={place.name}
-          onError={() => setImageError(true)}
+          onError={handleImageError}
         />
       ) : (
-        <div className="place-image-placeholder">
+        <div className="image-placeholder">
           <ImageIcon size={32} />
           <span>{place.name}</span>
         </div>

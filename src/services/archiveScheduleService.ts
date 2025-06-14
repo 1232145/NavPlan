@@ -4,6 +4,7 @@ import {
   SaveScheduleRequest, 
   ArchivedList 
 } from '../types';
+import { cacheUtils } from './cacheManager';
 
 // Cache management for archive schedules
 class ArchiveScheduleCache {
@@ -43,6 +44,8 @@ export const archiveScheduleService = {
   async saveSchedule(request: SaveScheduleRequest): Promise<{ schedule_id: string; slot_number: number }> {
     const response = await api.post(`/archived-lists/${request.archive_list_id}/schedules`, request);
     cache.invalidate(request.archive_list_id);
+    // Also invalidate the archived lists cache since the list now has a new schedule
+    cacheUtils.lists.invalidate();
     return response.data;
   },
 
@@ -87,6 +90,8 @@ export const archiveScheduleService = {
       updates
     });
     cache.invalidate(listId);
+    // Also invalidate the archived lists cache since schedule metadata changed
+    cacheUtils.lists.invalidate();
   },
 
   /**
@@ -95,6 +100,8 @@ export const archiveScheduleService = {
   async deleteSchedule(listId: string, scheduleId: string): Promise<void> {
     await api.delete(`/archived-lists/${listId}/schedules/${scheduleId}`);
     cache.invalidate(listId);
+    // Also invalidate the archived lists cache since the list now has one less schedule
+    cacheUtils.lists.invalidate();
   },
 
   /**

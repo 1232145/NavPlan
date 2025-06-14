@@ -42,11 +42,7 @@ html {
   border-bottom: 1px solid var(--color-secondary-200);
 }
 
-.back-to-map-button {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
+
 
 .save-schedule-button {
   display: flex;
@@ -526,11 +522,6 @@ html {
   border-top: 4px solid var(--color-primary-600);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 .location-generation-loading h2 {

@@ -9,3 +9,11 @@ Modify schema to attach schedule (High priority)
 Import from google maps your archived list
 
 AI chat for schedule?
+
+Filter too strong, so AI select 0 place
+user pref not optional?
+✅ saved to "xxx" on the top right of the map wrong even when already saved (perhaps this should confirm or disable the save button) - FIXED: Added state tracking and disabled button after saving
+✅ Upon saved schedule when navigate to archvie list it did not appear but reappear when reload page - FIXED: Added navigation state to trigger data refresh when returning from schedule save
+
+if place schedule open
+advance option and filter what's the corelation? Even necessary?

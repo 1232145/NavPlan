@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import './index.css';
 import { Button } from '../../components/Button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArchivedList, Place, SavedSchedule } from '../../types';
 import { useArchiveSchedules, useArchivedLists } from '../../hooks';
+import { DEFAULT_CATEGORIES } from '../../constants/common';
 import CategoryFilter from '../../components/CategoryFilter';
 import ScheduleGenerationDialog, { ScheduleGenerationOptions } from '../../components/ScheduleGenerationDialog';
 import SaveScheduleDialog from '../../components/SaveScheduleDialog';
@@ -109,6 +110,7 @@ const filterPlacesByCategories = (places: Place[], selectedCategories: string[])
 const ArchivedListsPage: React.FC = () => {
   const { generateSchedule } = useAppContext();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Archive list management
   const {
@@ -134,8 +136,7 @@ const ArchivedListsPage: React.FC = () => {
     getEnabledPlaces,
     startDelete,
     confirmDelete,
-    cancelDelete,
-    clearError
+    cancelDelete
   } = useArchivedLists();
   
   // Archive schedule management
@@ -144,7 +145,29 @@ const ArchivedListsPage: React.FC = () => {
   // Schedule modal state for choosing start time
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [selectedList, setSelectedList] = useState<ArchivedList | null>(null);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(['food', 'cafe', 'attraction', 'outdoor', 'shopping', 'other']);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+
+  // Refresh data when navigating back from schedule page after saving
+  useEffect(() => {
+    const state = location.state as { refreshLists?: boolean } | null;
+    if (state?.refreshLists) {
+      fetchArchivedLists(true);
+      // Clear the state to prevent unnecessary re-fetches
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, fetchArchivedLists, navigate, location.pathname]);
+
+  // Also refresh when the page becomes visible (handles browser back/forward)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchArchivedLists(true); // Force refresh when page becomes visible
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [fetchArchivedLists]);
 
   const handleGenerateSchedule = (list: ArchivedList) => {
     // Get enabled places (considering edit mode toggles)
@@ -170,7 +193,7 @@ const ArchivedListsPage: React.FC = () => {
   const handleScheduleClose = () => {
     setScheduleOpen(false);
     setSelectedList(null);
-    setSelectedCategories(['food', 'cafe', 'attraction', 'outdoor', 'shopping', 'other']); // Reset to all categories
+    setSelectedCategories(DEFAULT_CATEGORIES); // Reset to all categories
   };
 
   const handleScheduleConfirm = async (options: ScheduleGenerationOptions) => {
@@ -256,7 +279,7 @@ const ArchivedListsPage: React.FC = () => {
     try {
       await archiveSchedules.deleteSchedule(listId, scheduleId);
       // Refresh the lists to show updated schedule count
-      await fetchArchivedLists();
+      await fetchArchivedLists(true);
     } catch (err) {
       console.error('Failed to delete schedule:', err);
     }
@@ -266,7 +289,7 @@ const ArchivedListsPage: React.FC = () => {
     try {
       await archiveSchedules.updateScheduleMetadata(listId, scheduleId, { is_favorite: isFavorite });
       // Refresh the lists to show updated favorite status
-      await fetchArchivedLists();
+      await fetchArchivedLists(true);
     } catch (err) {
       console.error('Failed to update schedule:', err);
     }
@@ -276,7 +299,7 @@ const ArchivedListsPage: React.FC = () => {
     try {
       await archiveSchedules.saveScheduleToArchive(options);
       // Refresh the lists to show updated schedule count
-      await fetchArchivedLists();
+      await fetchArchivedLists(true);
     } catch (err) {
       console.error('Failed to save schedule:', err);
     }

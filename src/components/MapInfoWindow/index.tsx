@@ -19,9 +19,10 @@
  * />
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { InfoWindow } from '@react-google-maps/api';
 import { Place } from '../../types';
+import { useImageError } from '../../hooks/useImageError';
 import { ImageIcon } from 'lucide-react';
 import { Button } from '../Button';
 import './index.css';
@@ -39,7 +40,7 @@ const MapInfoWindow: React.FC<MapInfoWindowProps> = ({
   onAddToFavorites,
   showAddButton = false
 }) => {
-  const [imageError, setImageError] = useState(false);
+  const { imageError, handleImageError } = useImageError();
   
   // Helper function to get opening hours display text
   const getOpeningHoursDisplay = () => {
@@ -77,11 +78,11 @@ const MapInfoWindow: React.FC<MapInfoWindowProps> = ({
             <img 
               src={place.photos[0]} 
               alt={place.name} 
-              onError={() => setImageError(true)}
+              onError={handleImageError}
             />
           </div>
         ) : (
-          <div className="info-window-image-placeholder">
+          <div className="image-placeholder">
             <ImageIcon size={32} color="#9ca3af" />
             <span>{place.name}</span>
           </div>

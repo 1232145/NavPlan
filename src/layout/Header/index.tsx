@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Map, LogOut } from 'lucide-react';
 import './index.css';
 import { Button } from '../../components/Button';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
+import { useModalState } from '../../hooks/useModalState';
 import api from '../../services/api/axios';
 
 export interface HeaderProps {
@@ -16,7 +17,7 @@ const Header: React.FC<HeaderProps> = ({ onMyListsClick, onLogoClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { setUser, user } = useAppContext();
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { isOpen: isDropdownOpen, toggleModal: toggleDropdown, closeModal: closeDropdown } = useModalState();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isMapPage = location.pathname === '/map';
 
@@ -24,7 +25,7 @@ const Header: React.FC<HeaderProps> = ({ onMyListsClick, onLogoClick }) => {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
+        closeDropdown();
       }
     };
 
@@ -32,7 +33,7 @@ const Header: React.FC<HeaderProps> = ({ onMyListsClick, onLogoClick }) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [closeDropdown]);
 
   const handleGoToMap = () => {
     navigate('/map');
@@ -43,14 +44,10 @@ const Header: React.FC<HeaderProps> = ({ onMyListsClick, onLogoClick }) => {
       await api.post('/logout');
       setUser(null);
       navigate('/');
-      setIsDropdownOpen(false);
+      closeDropdown();
     } catch (error) {
       console.error('Failed to sign out:', error);
     }
-  };
-
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
   };
 
   return (

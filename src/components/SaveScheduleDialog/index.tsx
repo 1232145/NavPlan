@@ -147,18 +147,17 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
   const canSave = !loading && !hasErrors && formData.name.trim();
 
   return (
-    <div className="save-schedule-overlay" onClick={onClose}>
-      <div className="save-schedule-dialog" onClick={e => e.stopPropagation()}>
-        {/* Header */}
-        <div className="save-schedule-header">
-          <div className="save-schedule-title">
-            <Save size={20} />
-            <h3>Save Schedule to Archive</h3>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-dialog" onClick={e => e.stopPropagation()}>
+                      <div className="modal-header">
+              <div className="save-schedule-title">
+                <Save size={20} />
+                <h3 className="modal-title">Save Schedule to Archive</h3>
+              </div>
+              <button className="modal-close" onClick={onClose} disabled={loading}>
+              <X size={20} />
+            </button>
           </div>
-          <button className="save-schedule-close" onClick={onClose} disabled={loading}>
-            <X size={20} />
-          </button>
-        </div>
 
         {/* Content */}
         <div className="save-schedule-content">
@@ -175,7 +174,7 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
           <div className="save-schedule-form">
             {/* Schedule Name */}
             <div className="form-group">
-              <label htmlFor="schedule-name">Schedule Name</label>
+              <label htmlFor="schedule-name" className="form-label">Schedule Name</label>
               <input
                 id="schedule-name"
                 type="text"
@@ -184,16 +183,16 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
                 placeholder="Enter schedule name..."
                 maxLength={100}
                 disabled={loading}
-                className={validationErrors.name ? 'error' : ''}
+                className={`form-input ${validationErrors.name ? 'error' : ''}`}
               />
               {validationErrors.name && (
-                <span className="error-message">{validationErrors.name}</span>
+                <span className="form-error-text">{validationErrors.name}</span>
               )}
             </div>
 
             {/* Travel Mode */}
             <div className="form-group">
-              <label>Travel Mode</label>
+              <label className="form-label">Travel Mode</label>
               <div className="travel-mode-grid">
                 {TRAVEL_MODES.map(mode => (
                   <button
@@ -212,7 +211,7 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
 
             {/* Time Range */}
             <div className="form-group">
-              <label>Schedule Time</label>
+              <label className="form-label">Schedule Time</label>
               <div className="time-range-inputs">
                 <div className="time-input-group">
                   <Clock size={16} />
@@ -232,14 +231,14 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
                 </div>
               </div>
               {validationErrors.time && (
-                <span className="error-message">{validationErrors.time}</span>
+                <span className="form-error-text">{validationErrors.time}</span>
               )}
             </div>
 
             {/* Slot Selection (if replacing) */}
             {suggestedSlot && (
               <div className="form-group">
-                <label>Schedule Slot</label>
+                <label className="form-label">Schedule Slot</label>
                 <div className="slot-info">
                   <Calendar size={16} />
                   <span>This will be saved as <strong>{SLOT_NAMES[suggestedSlot]}</strong></span>

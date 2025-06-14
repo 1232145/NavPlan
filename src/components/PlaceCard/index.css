@@ -92,32 +92,3 @@
       height: 160px;
     }
   }
-
-  /* Placeholder for when images fail to load */
-  .place-image-placeholder {
-    width: 100%;
-    height: 160px;
-    border-radius: 6px;
-    background-color: #f3f4f6;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #9ca3af;
-    flex-shrink: 0;
-    margin-right: 0;
-    margin-bottom: 8px;
-    text-align: center;
-    padding: 8px;
-  }
-
-  .place-image-placeholder span {
-    margin-top: 8px;
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    max-width: 100%;
-  }

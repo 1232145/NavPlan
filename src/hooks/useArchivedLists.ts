@@ -17,7 +17,7 @@ interface UseArchivedListsState {
 
 interface UseArchivedListsReturn extends UseArchivedListsState {
   // List operations
-  fetchArchivedLists: () => Promise<void>;
+  fetchArchivedLists: (forceRefresh?: boolean) => Promise<void>;
   
   // Expansion
   toggleExpanded: (listId: string) => void;
@@ -92,9 +92,15 @@ export const useArchivedLists = (): UseArchivedListsReturn => {
   }, [state.placesToggles]);
 
   // Optimized fetch with error handling and loading states
-  const fetchArchivedLists = useCallback(async () => {
+  const fetchArchivedLists = useCallback(async (forceRefresh = false) => {
     try {
       updateState({ loading: true, error: null });
+      
+      // Force cache invalidation if requested
+      if (forceRefresh) {
+        archivedListService.invalidateCache();
+      }
+      
       const lists = await archivedListService.getLists();
       updateState({ archivedLists: lists });
     } catch (err) {
