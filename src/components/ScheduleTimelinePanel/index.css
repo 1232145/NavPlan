@@ -17,6 +17,7 @@
 }
 
 .schedule-timeline-panel .schedule-summary {
+  width: 90%;
   padding: 15px;
   margin-top: 12px;
   background-color: var(--background-color);
@@ -38,7 +39,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
-  align-self: flex-start;
+  align-self: center;
 }
 
 .schedule-timeline-panel .schedule-items-list {

@@ -56,16 +56,16 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
   };
 
   return (
-    <div className="archive-list-selector-overlay" onClick={onClose}>
-      <div className="archive-list-selector-dialog" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-dialog" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="archive-list-selector-header">
-          <div className="archive-list-selector-title">
-            <FolderOpen size={20} />
-            <h3>Choose Archive List</h3>
-          </div>
+        <div className="modal-header">
+          <h3 className="modal-title">
+            <FolderOpen size={20} style={{ marginRight: '12px' }} />
+            Choose Archive List
+          </h3>
           <button 
-            className="archive-list-selector-close" 
+            className="modal-close" 
             onClick={onClose}
             disabled={loading}
           >
@@ -81,7 +81,7 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
 
           {/* Error State */}
           {error && (
-            <div className="archive-list-selector-error">
+            <div className="error-message">
               <AlertCircle size={16} />
               <span>{error}</span>
             </div>
@@ -89,9 +89,9 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
 
           {/* Loading State */}
           {loading && (
-            <div className="archive-list-selector-loading">
-              <Loader2 size={20} className="spinning" />
-              <span>Loading archive lists...</span>
+            <div className="loading-container">
+              <Loader2 size={20} className="loading-spinner" />
+              <span className="loading-text">Loading archive lists...</span>
             </div>
           )}
 
@@ -168,29 +168,31 @@ const ArchiveListSelector: React.FC<ArchiveListSelectorProps> = ({
 
         {/* Footer */}
         <div className="archive-list-selector-footer">
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={handleConfirm}
-            disabled={loading || !selectedList}
-          >
-            {loading ? (
+          <div className="button-group end">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleConfirm}
+              disabled={loading || !selectedList}
+            >
+                          {loading ? (
               <>
-                <Loader2 size={16} className="spinning" />
+                <Loader2 size={16} className="loading-spinner small" />
                 Saving...
               </>
             ) : (
               'Save to This List'
             )}
-          </Button>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

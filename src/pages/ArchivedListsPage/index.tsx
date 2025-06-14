@@ -340,7 +340,6 @@ const ArchivedListsPage: React.FC = () => {
           onClose={archiveSchedules.closeSaveDialog}
           onSave={handleSaveScheduleWrapper}
           selectedList={archiveSchedules.selectedList}
-          suggestedSlot={archiveSchedules.scheduleSlotSelection}
           loading={archiveSchedules.isSavingSchedule}
           error={archiveSchedules.error}
         />

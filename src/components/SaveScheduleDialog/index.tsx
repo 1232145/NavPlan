@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArchivedList, TravelMode } from '../../types';
 import { Button } from '../Button';
-import { X, Save, Clock, MapPin, Calendar } from 'lucide-react';
+import { X, Save, Clock, MapPin } from 'lucide-react';
+import { TRAVEL_MODES, VALIDATION_LIMITS } from '../../constants/common';
 import './index.css';
 
 interface SaveScheduleDialogProps {
@@ -9,9 +10,12 @@ interface SaveScheduleDialogProps {
   onClose: () => void;
   onSave: (options: SaveScheduleOptions) => Promise<void>;
   selectedList: ArchivedList | null;
-  suggestedSlot?: number | null;
   loading?: boolean;
   error?: string | null;
+  // Schedule details from the generated schedule
+  scheduleStartTime?: string;
+  scheduleEndTime?: string;
+  defaultName?: string;
 }
 
 export interface SaveScheduleOptions {
@@ -19,111 +23,69 @@ export interface SaveScheduleOptions {
   travelMode: TravelMode;
   startTime: string;
   endTime: string;
-  replaceSlot?: number;
 }
-
-const TRAVEL_MODES: { value: TravelMode; label: string; icon: string }[] = [
-  { value: 'walking', label: 'Walking', icon: '🚶' },
-  { value: 'driving', label: 'Driving', icon: '🚗' },
-  { value: 'bicycling', label: 'Bicycling', icon: '🚲' },
-  { value: 'transit', label: 'Transit', icon: '🚆' }
-];
-
-const SLOT_NAMES = ['', 'Morning Route', 'Afternoon Route', 'Evening Route'];
 
 const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
   open,
   onClose,
   onSave,
   selectedList,
-  suggestedSlot,
   loading = false,
-  error = null
+  error = null,
+  scheduleStartTime = '09:00',
+  scheduleEndTime = '19:00',
+  defaultName = ''
 }) => {
-  const [formData, setFormData] = useState({
-    name: '',
-    travelMode: 'walking' as TravelMode,
-    startTime: '09:00',
-    endTime: '19:00',
-    replaceSlot: undefined as number | undefined
-  });
+  const [name, setName] = useState('');
+  const [travelMode, setTravelMode] = useState<TravelMode>('walking');
+  const [nameError, setNameError] = useState('');
 
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-
-  // Reset form when dialog opens/closes
+  // Reset form when dialog opens
   useEffect(() => {
-    if (open && selectedList) {
-      const defaultName = suggestedSlot 
-        ? SLOT_NAMES[suggestedSlot] || `Schedule ${suggestedSlot}`
-        : `${selectedList.name} Schedule`;
-        
-      setFormData({
-        name: defaultName,
-        travelMode: 'walking',
-        startTime: '09:00',
-        endTime: '19:00',
-        replaceSlot: suggestedSlot || undefined
-      });
-      setValidationErrors({});
+    if (open) {
+      setName(defaultName || (selectedList ? `${selectedList.name} Schedule` : ''));
+      setTravelMode('walking');
+      setNameError('');
     }
-  }, [open, selectedList, suggestedSlot]);
+  }, [open, defaultName, selectedList]);
 
-  // Form validation
-  const validateForm = useCallback((): boolean => {
-    const errors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      errors.name = 'Schedule name is required';
-    } else if (formData.name.length > 100) {
-      errors.name = 'Name must be 100 characters or less';
+  // Validate name
+  const validateName = useCallback((value: string): string => {
+    if (!value.trim()) {
+      return 'Schedule name is required';
     }
-
-    // Time validation
-    const startHour = parseInt(formData.startTime.split(':')[0]);
-    const endHour = parseInt(formData.endTime.split(':')[0]);
-    const startMinute = parseInt(formData.startTime.split(':')[1]);
-    const endMinute = parseInt(formData.endTime.split(':')[1]);
-    
-    const startTotalMinutes = startHour * 60 + startMinute;
-    const endTotalMinutes = endHour * 60 + endMinute;
-
-    if (startTotalMinutes >= endTotalMinutes) {
-      errors.time = 'End time must be after start time';
+    if (value.length > VALIDATION_LIMITS.MAX_NAME_LENGTH) {
+      return `Name must be ${VALIDATION_LIMITS.MAX_NAME_LENGTH} characters or less`;
     }
+    return '';
+  }, []);
 
-    if (endTotalMinutes - startTotalMinutes < 120) {
-      errors.time = 'Schedule must be at least 2 hours long';
-    }
+  // Handle name change
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setName(value);
+    setNameError(validateName(value));
+  }, [validateName]);
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [formData]);
-
-  // Handle form submission
+  // Handle save
   const handleSave = useCallback(async () => {
-    if (!validateForm()) return;
+    const error = validateName(name);
+    if (error) {
+      setNameError(error);
+      return;
+    }
 
     try {
       await onSave({
-        name: formData.name.trim(),
-        travelMode: formData.travelMode,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        replaceSlot: formData.replaceSlot
+        name: name.trim(),
+        travelMode,
+        startTime: scheduleStartTime,
+        endTime: scheduleEndTime
       });
-    } catch (error) {
+    } catch (err) {
       // Error handling is done in parent component
     }
-  }, [formData, validateForm, onSave]);
-
-  // Handle input changes
-  const updateFormData = useCallback((field: keyof typeof formData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear validation error for this field
-    if (validationErrors[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  }, [validationErrors]);
+  }, [name, travelMode, scheduleStartTime, scheduleEndTime, onSave, validateName]);
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -143,141 +105,108 @@ const SaveScheduleDialog: React.FC<SaveScheduleDialogProps> = ({
 
   if (!open || !selectedList) return null;
 
-  const hasErrors = Object.keys(validationErrors).length > 0;
-  const canSave = !loading && !hasErrors && formData.name.trim();
+  const canSave = !loading && !nameError && name.trim();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-dialog" onClick={e => e.stopPropagation()}>
-                      <div className="modal-header">
-              <div className="save-schedule-title">
-                <Save size={20} />
-                <h3 className="modal-title">Save Schedule to Archive</h3>
-              </div>
-              <button className="modal-close" onClick={onClose} disabled={loading}>
-              <X size={20} />
-            </button>
-          </div>
+        {/* Header */}
+        <div className="modal-header">
+          <h3 className="modal-title">
+            <Save size={20} style={{ marginRight: '12px' }} />
+            Save Schedule
+          </h3>
+          <button className="modal-close" onClick={onClose} disabled={loading}>
+            <X size={20} />
+          </button>
+        </div>
 
         {/* Content */}
         <div className="save-schedule-content">
           {/* Archive List Info */}
           <div className="archive-list-info">
             <MapPin size={16} />
-            <span>Saving to: <strong>{selectedList.name}</strong></span>
-            <span className="schedule-slots-info">
-              ({selectedList.saved_schedules.length}/3 slots used)
-            </span>
+            <div className="archive-list-details">
+              <span>Saving to: <strong>{selectedList.name}</strong></span>
+              <span className="schedule-slots-info">
+                {selectedList.saved_schedules.length}/3 slots used
+              </span>
+            </div>
           </div>
 
-          {/* Form */}
-          <div className="save-schedule-form">
-            {/* Schedule Name */}
-            <div className="form-group">
-              <label htmlFor="schedule-name" className="form-label">Schedule Name</label>
-              <input
-                id="schedule-name"
-                type="text"
-                value={formData.name}
-                onChange={e => updateFormData('name', e.target.value)}
-                placeholder="Enter schedule name..."
-                maxLength={100}
-                disabled={loading}
-                className={`form-input ${validationErrors.name ? 'error' : ''}`}
-              />
-              {validationErrors.name && (
-                <span className="form-error-text">{validationErrors.name}</span>
-              )}
+          {/* Schedule Summary */}
+          <div className="schedule-summary">
+            <div className="schedule-summary-item">
+              <Clock size={16} />
+              <span>Time: {scheduleStartTime} - {scheduleEndTime}</span>
             </div>
+          </div>
 
-            {/* Travel Mode */}
-            <div className="form-group">
-              <label className="form-label">Travel Mode</label>
-              <div className="travel-mode-grid">
-                {TRAVEL_MODES.map(mode => (
-                  <button
-                    key={mode.value}
-                    type="button"
-                    className={`travel-mode-option ${formData.travelMode === mode.value ? 'selected' : ''}`}
-                    onClick={() => updateFormData('travelMode', mode.value)}
-                    disabled={loading}
-                  >
-                    <span className="travel-mode-icon">{mode.icon}</span>
-                    <span>{mode.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Time Range */}
-            <div className="form-group">
-              <label className="form-label">Schedule Time</label>
-              <div className="time-range-inputs">
-                <div className="time-input-group">
-                  <Clock size={16} />
-                  <input
-                    type="time"
-                    value={formData.startTime}
-                    onChange={e => updateFormData('startTime', e.target.value)}
-                    disabled={loading}
-                  />
-                  <span>to</span>
-                  <input
-                    type="time"
-                    value={formData.endTime}
-                    onChange={e => updateFormData('endTime', e.target.value)}
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-              {validationErrors.time && (
-                <span className="form-error-text">{validationErrors.time}</span>
-              )}
-            </div>
-
-            {/* Slot Selection (if replacing) */}
-            {suggestedSlot && (
-              <div className="form-group">
-                <label className="form-label">Schedule Slot</label>
-                <div className="slot-info">
-                  <Calendar size={16} />
-                  <span>This will be saved as <strong>{SLOT_NAMES[suggestedSlot]}</strong></span>
-                </div>
-              </div>
+          {/* Schedule Name */}
+          <div className="form-group">
+            <label htmlFor="schedule-name" className="form-label">Schedule Name</label>
+            <input
+              id="schedule-name"
+              type="text"
+              value={name}
+              onChange={handleNameChange}
+              placeholder="Enter schedule name..."
+              maxLength={VALIDATION_LIMITS.MAX_NAME_LENGTH}
+              disabled={loading}
+              className={`form-input ${nameError ? 'error' : ''}`}
+            />
+            {nameError && (
+              <span className="form-error-text">{nameError}</span>
             )}
+          </div>
+
+          {/* Travel Mode */}
+          <div className="form-group">
+            <label className="form-label">Travel Mode</label>
+            <div className="travel-mode-grid">
+              {TRAVEL_MODES.map(mode => (
+                <button
+                  key={mode.value}
+                  type="button"
+                  className={`travel-mode-option ${travelMode === mode.value ? 'selected' : ''}`}
+                  onClick={() => setTravelMode(mode.value)}
+                  disabled={loading}
+                >
+                  <span className="travel-mode-icon">{mode.icon}</span>
+                  <span>{mode.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Error Display */}
           {error && (
-            <div className="save-schedule-error">
-              <span>⚠️ {error}</span>
+            <div className="error-message">
+              ⚠️ {error}
             </div>
           )}
         </div>
 
         {/* Actions */}
         <div className="save-schedule-actions">
-          <Button
-            variant="secondary"
-            size="md"
-            onClick={onClose}
-            disabled={loading}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            size="md"
-            onClick={handleSave}
-            disabled={!canSave}
-          >
-            {loading ? 'Saving...' : 'Save Schedule'}
-          </Button>
-        </div>
-
-        {/* Keyboard Shortcuts Hint */}
-        <div className="keyboard-shortcuts">
-          <span>Press <kbd>Esc</kbd> to cancel or <kbd>Ctrl+Enter</kbd> to save</span>
+          <div className="button-group end">
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={handleSave}
+              disabled={!canSave}
+            >
+              {loading ? 'Saving...' : 'Save Schedule'}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

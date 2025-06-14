@@ -155,7 +155,7 @@ const SchedulePage: React.FC = () => {
       <NavbarColumn />
 
       {/* Save Schedule Dialog - only for current schedules */}
-      {!isViewingSaved && (
+      {!isViewingSaved && currentSchedule && (
         <SaveScheduleDialog
           open={archiveSchedules.saveDialogOpen}
           onClose={archiveSchedules.closeSaveDialog}
@@ -164,9 +164,11 @@ const SchedulePage: React.FC = () => {
             handleScheduleSaved();
           }}
           selectedList={archiveSchedules.selectedList}
-          suggestedSlot={archiveSchedules.scheduleSlotSelection}
           loading={archiveSchedules.isSavingSchedule}
           error={archiveSchedules.error}
+          scheduleStartTime={currentSchedule.items[0]?.start_time || '09:00'}
+          scheduleEndTime={currentSchedule.items[currentSchedule.items.length - 1]?.end_time || '19:00'}
+          defaultName={sourceArchiveList ? `${sourceArchiveList.name} Schedule` : ''}
         />
       )}
       
@@ -189,14 +191,14 @@ const SchedulePage: React.FC = () => {
 
           {/* Show schedule info for saved schedules */}
           {isViewingSaved && (
-            <div className="saved-schedule-info">
+            <>
               <span className="saved-schedule-name">
                 {viewingSavedSchedule.metadata.name}
               </span>
               <span className="saved-schedule-date">
                 Saved {new Date(viewingSavedSchedule.metadata.created_at).toLocaleDateString()}
               </span>
-            </div>
+            </>
           )}
         </div>
         
