@@ -31,6 +31,7 @@ export interface TabControlProps {
 function useItineraryPanelLogic(activeTab: 'saved' | 'search', setActiveTab: (tab: 'saved' | 'search') => void) {
   const { favoritePlaces, removeFavoritePlace, addFavoritePlace, clearAllFavorites, archiveFavorites, searchResults, setSearchResults } = useAppContext();
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleSearchResults = (e: Event) => {
@@ -78,17 +79,18 @@ function useItineraryPanelLogic(activeTab: 'saved' | 'search', setActiveTab: (ta
     }
   };
 
-  return { favoritePlaces, removeFavoritePlace, addFavoritePlace, searchResults, handleTabChange, selectedPlace, clearAllFavorites, archiveFavorites };
+  return { navigate, favoritePlaces, removeFavoritePlace, addFavoritePlace, searchResults, handleTabChange, selectedPlace, clearAllFavorites, archiveFavorites };
 }
 
 const FavoritePlacesList: React.FC<{ 
+  navigate: (path: string, options?: { state?: any }) => void;
   favoritePlaces: Place[]; 
   removeFavoritePlace: (id: string) => void; 
   selectedPlace: Place | null; 
   clearAllFavorites: () => void; 
   archiveFavorites: (name?: string, note?: string) => Promise<void>; 
   setActiveTab: (tab: 'saved' | 'search') => void;
-}> = ({ favoritePlaces, removeFavoritePlace, selectedPlace, clearAllFavorites, archiveFavorites, setActiveTab }) => {
+}> = ({ navigate, favoritePlaces, removeFavoritePlace, selectedPlace, clearAllFavorites, archiveFavorites, setActiveTab }) => {
   let results = favoritePlaces;
   let selected = null;
   if (selectedPlace && favoritePlaces.some(p => p.id === selectedPlace.id)) {
@@ -135,6 +137,8 @@ const FavoritePlacesList: React.FC<{
       setTimeout(() => {
         setShowSuccessMessage(false);
       }, 5000);
+
+      navigate('/lists');
     } catch (error) {
       console.error('Failed to archive favorites:', error);
     }
@@ -484,7 +488,7 @@ const SearchResultsList: React.FC<{
 };
 
 const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) => {
-  const { favoritePlaces, removeFavoritePlace, addFavoritePlace, searchResults, handleTabChange, selectedPlace, clearAllFavorites, archiveFavorites } = useItineraryPanelLogic(activeTab, setActiveTab);
+  const { navigate, favoritePlaces, removeFavoritePlace, addFavoritePlace, searchResults, handleTabChange, selectedPlace, clearAllFavorites, archiveFavorites } = useItineraryPanelLogic(activeTab, setActiveTab);
   
   return (
     <div className="itinerary-panel expanded">
@@ -511,6 +515,7 @@ const ItineraryPanel: React.FC<TabControlProps> = ({ activeTab, setActiveTab }) 
       <div className="panel-content">
         {activeTab === 'saved'
           ? <FavoritePlacesList 
+              navigate={navigate}
               favoritePlaces={favoritePlaces} 
               removeFavoritePlace={removeFavoritePlace} 
               selectedPlace={selectedPlace} 

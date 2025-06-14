@@ -20,6 +20,7 @@ import NavbarColumn from '../../components/NavbarColumn';
 import { SearchBar } from '../../components/SearchBar';
 import { Place, Coordinates } from '../../types';
 import { useAppContext } from '../../context/AppContext';
+import { DEFAULT_MAP_CENTER } from '../../constants/common';
 import './index.css';
 
 // Utility for dispatching search results event
@@ -28,9 +29,16 @@ function dispatchSearchResults(places: Place[]) {
 }
 
 const MapPage: React.FC = () => {
-  const { setSearchResults } = useAppContext();
-  const [mapCenter, setMapCenter] = useState<Coordinates>({ lat: 40.7128, lng: -74.0060 });
+  const { setSearchResults, currentLocation } = useAppContext();
+  const [mapCenter, setMapCenter] = useState<Coordinates>(DEFAULT_MAP_CENTER);
   const [activeTab, setActiveTab] = useState<'saved' | 'search'>('search');
+
+  // Update map center when user location becomes available
+  useEffect(() => {
+    if (currentLocation) {
+      setMapCenter(currentLocation);
+    }
+  }, [currentLocation]);
 
   useEffect(() => {
     return () => {

@@ -78,7 +78,6 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
     const handlePlaceHover = (e: Event) => {
       const customEvent = e as CustomEvent;
       const { placeId, hovering } = customEvent.detail || {};
-      console.log('Hover event received:', placeId, hovering);
       setHoveredPlaceId(hovering ? placeId : null);
     };
     
@@ -86,7 +85,7 @@ const PlacesMap: React.FC<PlacesMapProps> = ({
     return () => {
       window.removeEventListener('place-hover', handlePlaceHover);
     };
-  }, []);
+  }, [activeTab]);
 
   // Clear timeout on unmount
   useEffect(() => {
