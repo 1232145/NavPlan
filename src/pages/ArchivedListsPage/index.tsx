@@ -98,7 +98,7 @@ const categorizePlaceType = (placeType: string): string => {
 // Helper to filter places by selected categories
 const filterPlacesByCategories = (places: Place[], selectedCategories: string[]): Place[] => {
   if (selectedCategories.length === 0) {
-    return []; // No categories selected means no places
+    return [];
   }
   
   return places.filter(place => {
@@ -156,18 +156,6 @@ const ArchivedListsPage: React.FC = () => {
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state, fetchArchivedLists, navigate, location.pathname]);
-
-  // Also refresh when the page becomes visible (handles browser back/forward)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchArchivedLists(true); // Force refresh when page becomes visible
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [fetchArchivedLists]);
 
   const handleGenerateSchedule = (list: ArchivedList) => {
     // Get enabled places (considering edit mode toggles)
@@ -332,6 +320,7 @@ const ArchivedListsPage: React.FC = () => {
           onConfirm={handleScheduleConfirm}
           title="Generate Schedule"
           placeCount={selectedList?.places.length}
+          archiveListPlaces={selectedList?.places}
         />
 
         {/* Save Schedule Dialog */}

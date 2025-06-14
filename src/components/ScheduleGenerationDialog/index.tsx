@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -7,6 +7,7 @@ import TextField from '@mui/material/TextField';
 import { Button } from '../Button';
 import { Clock, Info, ListChecks, Settings, Coffee, Utensils, Building, TreePine, ShoppingBag, Wine, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
+import { Place } from '../../types';
 import './index.css';
 
 export interface UserPreferences {
@@ -32,6 +33,7 @@ interface ScheduleGenerationDialogProps {
   description?: string;
   placeCount?: number;
   isLocationBased?: boolean;
+  archiveListPlaces?: Place[];
 }
 
 // Category options with icons and descriptions
@@ -50,6 +52,35 @@ const BALANCE_OPTIONS = [
   { id: 'diverse', label: 'Diverse', description: 'Light sampling of many different categories' }
 ];
 
+// Categorize place types
+const categorizePlaceType = (placeType: string): string => {
+  const type = placeType.toLowerCase();
+  if (type.includes('restaurant') || type.includes('food') || type.includes('meal')) return 'restaurants';
+  if (type.includes('cafe') || type.includes('coffee')) return 'cafes';
+  if (type.includes('museum') || type.includes('gallery') || type.includes('attraction') || type.includes('landmark')) return 'museums';
+  if (type.includes('park') || type.includes('garden') || type.includes('outdoor')) return 'parks';
+  if (type.includes('store') || type.includes('shop') || type.includes('mall') || type.includes('market')) return 'shopping';
+  if (type.includes('bar') || type.includes('pub') || type.includes('nightlife') || type.includes('club')) return 'bars';
+  return 'other';
+};
+
+// Get available categories based on archive list places
+const getAvailableCategories = (places: Place[]): typeof CATEGORY_OPTIONS => {
+  if (!places || places.length === 0) return CATEGORY_OPTIONS;
+  
+  const availableTypes = new Set(places.map(place => categorizePlaceType(place.placeType)));
+  return CATEGORY_OPTIONS.filter(category => availableTypes.has(category.id));
+};
+
+// Check if meal coverage makes sense
+const hasMealPlaces = (places: Place[]): boolean => {
+  if (!places || places.length === 0) return false;
+  return places.some(place => {
+    const category = categorizePlaceType(place.placeType);
+    return category === 'restaurants' || category === 'cafes';
+  });
+};
+
 const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
   open,
   onClose,
@@ -57,7 +88,8 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
   title = "Generate Schedule",
   description,
   placeCount,
-  isLocationBased = false
+  isLocationBased = false,
+  archiveListPlaces
 }) => {
   const { currentLocation } = useAppContext();
   const [currentStep, setCurrentStep] = useState(1);
@@ -74,6 +106,20 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
   const [maxPlaces, setMaxPlaces] = useState(12);
   const [mealRequirements, setMealRequirements] = useState(false);
 
+  // Get contextual options based on archive list
+  const availableCategories = getAvailableCategories(archiveListPlaces || []);
+  const showMealOption = hasMealPlaces(archiveListPlaces || []);
+  const maxAvailablePlaces = archiveListPlaces ? archiveListPlaces.length : 12;
+  const minPlaces = Math.min(3, maxAvailablePlaces);
+  const defaultMaxPlaces = Math.min(12, maxAvailablePlaces);
+
+  // Update maxPlaces when dialog opens or archive list changes
+  useEffect(() => {
+    if (open) {
+      setMaxPlaces(defaultMaxPlaces);
+    }
+  }, [open, defaultMaxPlaces]);
+
   const handleClose = () => {
     onClose();
     // Reset form when closing
@@ -84,7 +130,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
     setIncludeCurrentLocation(true);
     setMustInclude([]);
     setBalanceMode('balanced');
-    setMaxPlaces(12);
+    setMaxPlaces(defaultMaxPlaces);
     setMealRequirements(false);
   };
 
@@ -209,7 +255,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
       </p>
       
       <div className="schedule-categories-grid">
-        {CATEGORY_OPTIONS.map(category => (
+        {availableCategories.map(category => (
           <div 
             key={category.id}
             className={`schedule-category-option ${mustInclude.includes(category.id) ? 'selected' : ''}`}
@@ -248,30 +294,42 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
       )}
 
       <div className="schedule-advanced-options">
-        <div className="schedule-option-row">
-          <label className="schedule-meal-option">
-            <input
-              type="checkbox"
-              checked={mealRequirements}
-              onChange={(e) => setMealRequirements(e.target.checked)}
-            />
-            <span>Ensure meal coverage (breakfast, lunch, dinner based on schedule time)</span>
-          </label>
-        </div>
+        {showMealOption && (
+          <div className="schedule-option-row">
+            <label className="schedule-meal-option">
+              <input
+                type="checkbox"
+                checked={mealRequirements}
+                onChange={(e) => setMealRequirements(e.target.checked)}
+              />
+              <span>Ensure meal coverage (breakfast, lunch, dinner based on schedule time)</span>
+            </label>
+          </div>
+        )}
         
         <div className="schedule-option-row">
           <label htmlFor="max-places">Maximum places in schedule:</label>
-          <select 
-            id="max-places"
-            value={maxPlaces} 
-            onChange={(e) => setMaxPlaces(Number(e.target.value))}
-            className="schedule-max-places-select"
-          >
-            <option value={8}>8 places</option>
-            <option value={10}>10 places</option>
-            <option value={12}>12 places</option>
-            <option value={15}>15 places</option>
-          </select>
+          {archiveListPlaces ? (
+            <input
+              id="max-places"
+              type="number"
+              min={minPlaces}
+              max={maxAvailablePlaces}
+              value={maxPlaces}
+              onChange={(e) => setMaxPlaces(Math.min(maxAvailablePlaces, Math.max(minPlaces, Number(e.target.value))))}
+              className="schedule-max-places-input"
+            />
+          ) : (
+            <input
+              id="max-places"
+              type="number"
+              min={3}
+              max={12}
+              value={maxPlaces}
+              onChange={(e) => setMaxPlaces(Math.min(12, Math.max(3, Number(e.target.value))))}
+              className="schedule-max-places-input"
+            />
+          )}
         </div>
       </div>
 
@@ -282,7 +340,8 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
             ? `Will prioritize: ${mustInclude.join(', ')} in ${balanceMode} mode`
             : "Will create a balanced mix of different place types"
           }
-          {mealRequirements && " with meal coverage"}
+          {mealRequirements && showMealOption && " with meal coverage"}
+          {archiveListPlaces && ` (max ${maxAvailablePlaces} places available)`}
         </p>
       </div>
     </div>

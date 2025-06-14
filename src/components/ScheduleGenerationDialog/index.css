@@ -262,8 +262,17 @@
   border-radius: var(--radius-md);
   background: white;
   font-size: var(--text-sm);
-  color: var(--color-secondary-700);
   min-width: 120px;
+}
+
+.schedule-max-places-input {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-secondary-300);
+  border-radius: var(--radius-md);
+  background: white;
+  font-size: var(--text-sm);
+  width: 80px;
+  text-align: center;
 }
 
 /* Time Input Section */
