@@ -2,7 +2,7 @@
 
 A smart travel planning application that helps users discover amazing places and generate optimized day itineraries using AI-powered recommendations.
 
-> **Live Demo**: [xxx](xxx) 
+> **Live Demo**: [https://nav-plan.vercel.app](https://nav-plan.vercel.app)
 > **Source Code**: [https://github.com/1232145/NavPlan](https://github.com/1232145/NavPlan)
 
 ### **MongoDB Atlas **
