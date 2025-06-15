@@ -33,7 +33,13 @@ async def google_auth(request: Request):
         }
         response = JSONResponse({"user": user})
         response.set_cookie(
-            key="session", value=token, httponly=True, secure=False, samesite="lax", max_age=3600
+            key="session", 
+            value=token, 
+            httponly=True, 
+            secure=True,  # Required for cross-origin HTTPS
+            samesite="none",  # Required for cross-origin
+            max_age=3600,
+            domain=None  # Allow cross-origin
         )
         return response
     except Exception as e:
