@@ -251,12 +251,9 @@ const ArchivedListsPage: React.FC = () => {
   const handleViewSchedule = async (schedule: SavedSchedule) => {
     try {
       // Set the schedule in context and navigate to schedule page
-      // This will display the saved schedule
-      console.log('Viewing saved schedule:', schedule);
-      
+
       // TODO: Update AppContext to handle viewing saved schedules
       // For now, we'll navigate to schedule page
-      // The schedule page should be updated to handle saved schedules
       navigate('/schedule', { state: { savedSchedule: schedule } });
     } catch (err) {
       console.error('Failed to view schedule:', err);

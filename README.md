@@ -2,8 +2,7 @@
 
 A smart travel planning application that helps users discover amazing places and generate optimized day itineraries using AI-powered recommendations.
 
-**Live Demo**: [https://nav-plan.vercel.app](https://nav-plan.vercel.app)
-**Source Code**: [https://github.com/1232145/NavPlan](https://github.com/1232145/NavPlan)
+> **Live Demo**: [https://nav-plan.vercel.app](https://nav-plan.vercel.app)
 
 ### **MongoDB Atlas **
 - **Geospatial Queries**: 2dsphere indexes for location-based POI discovery within radius searches
@@ -112,7 +111,7 @@ pip install -r requirements.txt
 #### Frontend Setup
 ```bash
 npm install
-npm run dev
+npm run dev -- --port 3000
 ```
 
 The application will be available at:
