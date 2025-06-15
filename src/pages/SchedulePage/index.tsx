@@ -26,6 +26,7 @@ import DirectionsMap from '../../components/DirectionsMap';
 import ScheduleTimelinePanel from '../../components/ScheduleTimelinePanel';
 import SaveScheduleDialog from '../../components/SaveScheduleDialog';
 import NavbarColumn from '../../components/NavbarColumn';
+import LoadingScreen from '../../components/LoadingScreen';
 import { Button } from '../../components/Button';
 import { Bookmark } from 'lucide-react';
 import './index.css';
@@ -48,6 +49,7 @@ const SchedulePage: React.FC = () => {
   useEffect(() => {
     const savedSchedule = location.state?.savedSchedule as SavedSchedule;
     if (savedSchedule) {
+      // console.log('Setting viewingSavedSchedule:', savedSchedule);
       setViewingSavedSchedule(savedSchedule);
       setTravelMode(savedSchedule.metadata.travel_mode);
     }
@@ -60,10 +62,15 @@ const SchedulePage: React.FC = () => {
 
   // Redirect to map if no schedule and not viewing saved schedule
   useEffect(() => {
-    if (!currentSchedule && !viewingSavedSchedule) {
-      navigate('/map');
-    }
-  }, [currentSchedule, viewingSavedSchedule, navigate]);
+    const timer = setTimeout(() => {
+      if (!currentSchedule && !viewingSavedSchedule && !location.state?.savedSchedule) {
+        console.log('No schedule found, redirecting to map');
+        navigate('/map');
+      }
+    }, 100); // Small delay to allow state updates
+
+    return () => clearTimeout(timer);
+  }, [currentSchedule, viewingSavedSchedule, navigate, location.state]);
 
   // Set initial map center based on first place
   useEffect(() => {
@@ -87,7 +94,6 @@ const SchedulePage: React.FC = () => {
     
     // For saved schedules, we can't change travel mode
     if (viewingSavedSchedule) {
-      console.log('Cannot change travel mode for saved schedules');
       return;
     }
     
@@ -110,7 +116,6 @@ const SchedulePage: React.FC = () => {
 
   // Handle successful schedule save
   const handleScheduleSaved = async () => {
-    console.log('Schedule saved successfully!');
     setHasScheduleBeenSaved(true);
     // Could show a toast notification here
     navigate('/lists', { state: { refreshLists: true } });
@@ -145,6 +150,11 @@ const SchedulePage: React.FC = () => {
     }
     return favoritePlaces;
   }, [isViewingSaved, displaySchedule, favoritePlaces]);
+
+  // Show loading state while schedule is being set
+  if (!displaySchedule && location.state?.savedSchedule) {
+    return <LoadingScreen message="Loading saved schedule..." />;
+  }
 
   if (!displaySchedule) {
     return null;
