@@ -4,53 +4,150 @@
   min-height: 0;
   min-width: 0;
   width: 100%;
-  height: calc(100vh - 64px); /* Subtract header height */
-  margin-top: 4.5rem; 
-  padding-bottom: 20px;/* Add margin equal to header height */
-  gap: 20px;
-  padding-right: 435px; /* Account for itinerary panel width + margin */
+  height: 100vh;
+  margin-top: 0;
+  padding-bottom: 0;
+  gap: var(--space-3);
+  background: transparent;
 }
 
-.navbar-column {
-  width: 200px;
+/* Navbar column styles have been moved to src/components/NavbarColumn/index.css */
+
+.map-container-wrapper {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 30px;
-  align-items: center;
+  min-width: 0;
+  position: relative;
+  height: 100vh;
+  padding-right: var(--space-3);
+  padding-bottom: var(--space-5);
+  overflow: hidden;
 }
 
-.navbar-column button {
-  background: transparent;
-  border: none;
-  font-weight: 500;
-  padding: 8px 16px;
-  transition: color 0.2s ease;
-  width: 10rem;
-  align-items: center;
-}
-
-.navbar-column button:hover {
-  color: #1a4b6e;
+.search-bar-container {
+  position: absolute;
+  top: var(--space-12);
+  left: 32%;
+  transform: translateX(-50%);
+  width: 600px;
+  z-index: 10;
+  backdrop-filter: var(--glass-backdrop);
 }
 
 .map-container {
-  flex: 2;
   min-width: 0;
   min-height: 0;
-  border-radius: 20px;
-  width: calc(100% - 435px); /* Subtract itinerary panel width + margin */
+  border-radius: var(--radius-2xl);
+  width: 67%;
+  top: var(--space-6);
+  height: calc(100% - (var(--space-4) + 0.5rem) );
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-light);
+  overflow: hidden;
+  backdrop-filter: var(--glass-backdrop);
 }
 
 .itinerary-panel {
-  min-width: 320px;
-  max-width: 400px;
-  min-height: 0;
-  max-height: 100vh;
-  height: 95.6%;
-  border-radius: 20px;
-  margin-right: 1rem;
+  min-width: 20%;
+  max-width: 31%;
+  height: calc(100% - (var(--space-4) + 0.5rem) - var(--space-5));
+  border-radius: var(--radius-2xl);
   position: absolute;
-  right: 0;
-  top: 1rem;
+  right: var(--space-5);
+  top: var(--space-6);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  transition: var(--transition-normal);
+}
+
+/* Enhanced Search Bar Styling */
+.search-bar-container .search-bar {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: var(--glass-backdrop);
+  transition: var(--transition-normal);
+}
+
+.search-bar-container .search-bar:focus-within {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-primary-300);
+  box-shadow: 
+    var(--shadow-lg),
+    0 0 0 3px rgba(14, 165, 233, 0.1);
+}
+
+/* Responsive styles for search bar */
+@media (max-width: 1024px) {
+  .map-page-content {
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  
+  .map-container-wrapper {
+    padding-right: var(--space-4);
+    padding-bottom: var(--space-4);
+  }
+  
+  .search-bar-container {
+    width: 85%;
+    max-width: 500px;
+    left: 50%;
+  }
+  
+  .map-container {
+    width: 100%;
+    top: 15%;
+    height: 85%;
+  }
+  
+  .itinerary-panel {
+    position: relative;
+    right: auto;
+    top: auto;
+    width: 100%;
+    max-width: none;
+    height: 300px;
+    margin-top: var(--space-4);
+  }
+}
+
+@media (max-width: 768px) {
+  .search-bar-container {
+    width: 90%;
+    max-width: 400px;
+    top: var(--space-4);
+  }
+  
+  .map-container {
+    border-radius: var(--radius-xl);
+    top: 12%;
+    height: 88%;
+  }
+  
+  .itinerary-panel {
+    border-radius: var(--radius-xl);
+    height: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .map-page-content {
+    gap: var(--space-3);
+  }
+  
+  .map-container-wrapper {
+    padding-right: var(--space-3);
+    padding-bottom: var(--space-3);
+  }
+  
+  .search-bar-container {
+    width: 95%;
+    top: var(--space-3);
+  }
 } 

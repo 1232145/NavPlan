@@ -2,11 +2,13 @@ import { useEffect, useRef } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import MapPage from './pages/MapPage';
 import ArchivedListsPage from './pages/ArchivedListsPage';
+import SchedulePage from './pages/SchedulePage';
 import LandingPage from './pages/LandingPage';
 import ErrorPage from './pages/ErrorPage';
 import MainLayout from './layout/MainLayout';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import './styles/App.css';
+import LoadingScreen from './components/LoadingScreen';
 
 function SessionGuard({ children }: { children: React.ReactNode }) {
   const { user, checkSession, setUser } = useAppContext();
@@ -42,7 +44,8 @@ function SessionGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AppRoutes() {
-  const { user } = useAppContext();
+  const { user, isLoading } = useAppContext();
+
   if (!user) {
     return (
       <Routes>
@@ -51,18 +54,34 @@ function AppRoutes() {
     );
   }
   return (
-    <Routes>
-      <Route path="/error" element={<ErrorPage />} />
-      <Route element={<SessionGuard>
-        <MainLayout>
-          <Outlet />
-        </MainLayout>
-      </SessionGuard>}>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/map" element={<MapPage />} />
-        <Route path="/lists" element={<ArchivedListsPage />} />
-      </Route>
-    </Routes>
+    <>
+      {isLoading && <LoadingScreen />}
+      <Routes>
+        <Route path="/error" element={<ErrorPage />} />
+        <Route path="/schedule" element={
+          <SessionGuard>
+            <SchedulePage />
+          </SessionGuard>
+        } />
+        <Route path="/" element={
+          <SessionGuard>
+            <MainLayout>
+              <LandingPage />
+            </MainLayout>
+          </SessionGuard>
+        } />
+        <Route path="/map" element={
+          <SessionGuard>
+            <MapPage />
+          </SessionGuard>
+        } />
+        <Route path="/lists" element={
+          <SessionGuard>
+            <ArchivedListsPage />
+          </SessionGuard>
+        } />
+      </Routes>
+    </>
   );
 }
 
@@ -75,5 +94,4 @@ function App() {
     </AppProvider>
   );
 }
-
 export default App;

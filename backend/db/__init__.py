@@ -1,21 +1,11 @@
-import os
 from pymongo import MongoClient, ASCENDING
 from pymongo.errors import ConnectionFailure, OperationFailure
-from dotenv import load_dotenv
 from contextlib import contextmanager
 import logging
+from config import MONGODB_URI, MONGODB_DB
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-load_dotenv()
-
-MONGODB_URI = os.getenv("MONGODB_URI")
-MONGODB_DB = os.getenv("MONGODB_DB")
-
-if not MONGODB_URI or not MONGODB_DB:
-    raise ValueError("MONGODB_URI and MONGODB_DB must be set in the environment variables.")
 
 class DatabaseManager:
     _instance = None
@@ -108,4 +98,4 @@ db_manager = DatabaseManager()
 
 def get_database():
     """Get database instance with context manager"""
-    return db_manager.get_database()
+    return db_manager.get_database() 

@@ -1,30 +1,39 @@
-import React from 'react';
-import { Map } from 'lucide-react';
+import React, { useRef, useEffect } from 'react';
+import { Map, LogOut } from 'lucide-react';
 import './index.css';
-import { SearchBar } from '../../components/SearchBar';
-import { Coordinates, Place } from '../../types';
 import { Button } from '../../components/Button';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
+import { useModalState } from '../../hooks/useModalState';
 import api from '../../services/api/axios';
 
 export interface HeaderProps {
-  mapCenter?: Coordinates;
   onMyListsClick: () => void;
   onLogoClick: () => void;
 }
 
-// --- Utility for dispatching search results event ---
-function dispatchSearchResults(places: Place[]) {
-  window.dispatchEvent(new CustomEvent('search-places', { detail: places }));
-}
-
 // --- Main Component ---
-const Header: React.FC<HeaderProps> = ({ mapCenter, onMyListsClick, onLogoClick }) => {
+const Header: React.FC<HeaderProps> = ({ onMyListsClick, onLogoClick }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, setUser } = useAppContext();
+  const { setUser, user } = useAppContext();
+  const { isOpen: isDropdownOpen, toggleModal: toggleDropdown, closeModal: closeDropdown } = useModalState();
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const isMapPage = location.pathname === '/map';
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [closeDropdown]);
 
   const handleGoToMap = () => {
     navigate('/map');
@@ -35,6 +44,7 @@ const Header: React.FC<HeaderProps> = ({ mapCenter, onMyListsClick, onLogoClick 
       await api.post('/logout');
       setUser(null);
       navigate('/');
+      closeDropdown();
     } catch (error) {
       console.error('Failed to sign out:', error);
     }
@@ -47,24 +57,45 @@ const Header: React.FC<HeaderProps> = ({ mapCenter, onMyListsClick, onLogoClick 
           <Map size={28} />
           <h1>NavPlan</h1>
         </div>
-        {location.pathname === '/map' && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 24, marginRight: 24 }}>
-            <SearchBar onSearchResults={dispatchSearchResults} mapCenter={mapCenter} />
-          </div>
-        )}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px' }}>
-          {location.pathname !== '/map' && (
-            <>
-              <Button variant="primary" size="md" onClick={handleGoToMap}>
-                Go to Map
-              </Button>
-              <Button variant="primary" size="md" onClick={onMyListsClick}>
-                My Lists
-              </Button>
-              <Button variant="primary" size="md" onClick={handleSignOut}>
-                Sign Out
-              </Button>
-            </>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <Button variant="primary" size="md" onClick={handleGoToMap}>
+            Explore map
+          </Button>
+          <Button variant="primary" size="md" onClick={onMyListsClick}>
+            Generate Schedule
+          </Button>
+          {user?.picture && (
+            <div className="user-avatar-container" ref={dropdownRef}>
+              <div className="user-avatar" onClick={toggleDropdown}>
+                <img 
+                  src={user.picture} 
+                  alt={user.name || 'User avatar'} 
+                  className="avatar-image"
+                />
+              </div>
+              {isDropdownOpen && (
+                <div className="avatar-dropdown">
+                  <div className="dropdown-header">
+                    <div className="user-info">
+                      <img 
+                        src={user.picture} 
+                        alt={user.name || 'User avatar'} 
+                        className="dropdown-avatar"
+                      />
+                      <div className="user-details">
+                        <div className="user-name">{user.name}</div>
+                        <div className="user-email">{user.email}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="dropdown-divider"></div>
+                  <div className="dropdown-item" onClick={handleSignOut}>
+                    <LogOut size={16} />
+                    <span>Sign Out</span>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>

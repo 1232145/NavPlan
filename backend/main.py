@@ -1,198 +1,91 @@
 # To run the backend on localhost:8000, use:
 # uvicorn main:app --host localhost --port 8000 --reload
-import os
-from fastapi import FastAPI, Request, HTTPException, Response, Depends, Body
-from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
-from google.oauth2 import id_token
-from google.auth.transport import requests as grequests
-from starlette.responses import JSONResponse
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from db import get_database, db_manager
-from pymongo.errors import PyMongoError
 import logging
-from pydantic import BaseModel
-from bson.objectid import ObjectId
+import time
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from config import PROJECT_NAME, DESCRIPTION, VERSION, CORS_ORIGINS
+from db import db_manager
+from routes import api_router
+from routes.places import router as places_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-load_dotenv()
+# Initialize FastAPI app
+app = FastAPI(
+    title=PROJECT_NAME,
+    description=DESCRIPTION,
+    version=VERSION
+)
 
-app = FastAPI()
-
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-GOOGLE_CLIENT_ID = os.getenv("VITE_GOOGLE_CLIENT_ID")
-
-# Request/Response Models
-class ArchivedList(BaseModel):
-    name: str
-    places: List[Dict[str, Any]]
-    note: Optional[str] = None
-
-async def get_current_user(request: Request) -> Dict[str, Any]:
-    """Dependency to get current user from session"""
-    token = request.cookies.get("session")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not logged in")
+# Add performance monitoring middleware
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    
     try:
-        idinfo = id_token.verify_oauth2_token(token, grequests.Request(), GOOGLE_CLIENT_ID)
-        return {
-            "id": idinfo["sub"],
-            "email": idinfo["email"],
-            "name": idinfo.get("name"),
-            "picture": idinfo.get("picture"),
-        }
+        response = await call_next(request)
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = str(process_time)
+        
+        # Log API usage for monitoring
+        logger.info(
+            f"Request: {request.method} {request.url.path} | "
+            f"Client: {request.client.host} | "
+            f"Processing time: {process_time:.4f}s"
+        )
+        
+        return response
     except Exception as e:
-        logger.error(f"Token verification failed: {e}")
-        raise HTTPException(status_code=401, detail="Invalid session")
+        logger.error(f"Request error: {e}")
+        process_time = time.time() - start_time
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"},
+            headers={"X-Process-Time": str(process_time)}
+        )
+
+# Add global error handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Global exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred"}
+    )
+
+# Include all routes
+app.include_router(api_router)
+app.include_router(places_router)
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize resources on application startup"""
+    logger.info(f"Starting {PROJECT_NAME} v{VERSION}")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on application shutdown"""
+    logger.info("Shutting down application")
     db_manager.close()
 
-@app.post("/api/auth/google")
-async def google_auth(request: Request):
-    try:
-        data = await request.json()
-        token = data.get("token")
-        if not token:
-            raise HTTPException(status_code=400, detail="Missing token")
-        
-        idinfo = id_token.verify_oauth2_token(token, grequests.Request(), GOOGLE_CLIENT_ID)
-        user = {
-            "id": idinfo["sub"],
-            "email": idinfo["email"],
-            "name": idinfo.get("name"),
-            "picture": idinfo.get("picture"),
-        }
-        response = JSONResponse({"user": user})
-        response.set_cookie(
-            key="session", value=token, httponly=True, secure=False, samesite="lax", max_age=3600
-        )
-        return response
-    except Exception as e:
-        logger.error(f"Google auth error: {e}")
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-@app.get("/api/me")
-async def me(user: Dict[str, Any] = Depends(get_current_user)):
-    return {"user": user}
-
-@app.post("/api/logout")
-async def logout(response: Response):
-    response.delete_cookie("session")
-    return {"ok": True}
-
-@app.post("/api/archived-lists")
-async def create_archived_list(
-    archived_list: ArchivedList = Body(...),
-    user: Dict[str, Any] = Depends(get_current_user)
-):
-    try:
-        with get_database() as db:
-            result = db.archived_lists.update_one(
-                {"user_id": user["id"]},
-                {"$push": {
-                    "lists": {
-                        "_id": str(ObjectId()),
-                        "name": archived_list.name,
-                        "places": archived_list.places,
-                        "note": archived_list.note,
-                        "date": datetime.utcnow()
-                    }
-                }},
-                upsert=True
-            )
-            return {"id": str(result.upserted_id) if result.upserted_id else "updated"}
-    except PyMongoError as e:
-        logger.error(f"Database error in create_archived_list: {e}")
-        raise HTTPException(status_code=500, detail="Database error")
-    except Exception as e:
-        logger.error(f"Unexpected error in create_archived_list: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-@app.get("/api/archived-lists")
-async def get_archived_lists(
-    user: Dict[str, Any] = Depends(get_current_user)
-):
-    try:
-        with get_database() as db:
-            user_lists = db.archived_lists.find_one({"user_id": user["id"]})
-            if not user_lists:
-                return []
-            lists = user_lists.get("lists", [])
-            return [{
-                "id": list_item["_id"],
-                "name": list_item["name"],
-                "places": list_item["places"],
-                "note": list_item.get("note"),
-                "date": list_item["date"].isoformat()
-            } for list_item in lists]
-    except PyMongoError as e:
-        logger.error(f"Database error in get_archived_lists: {e}")
-        raise HTTPException(status_code=500, detail="Database error")
-    except Exception as e:
-        logger.error(f"Unexpected error in get_archived_lists: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-@app.put("/api/archived-lists/{list_id}")
-async def update_archived_list(
-    list_id: str,
-    archived_list: ArchivedList = Body(...),
-    user: Dict[str, Any] = Depends(get_current_user)
-):
-    try:
-        with get_database() as db:
-            result = db.archived_lists.update_one(
-                {"user_id": user["id"], "lists._id": list_id},
-                {"$set": {
-                    "lists.$.name": archived_list.name,
-                    "lists.$.places": archived_list.places,
-                    "lists.$.note": archived_list.note
-                }}
-            )
-            
-            if result.modified_count == 0:
-                raise HTTPException(status_code=404, detail="List not found")
-            
-            return {"ok": True}
-    except PyMongoError as e:
-        logger.error(f"Database error in update_archived_list: {e}")
-        raise HTTPException(status_code=500, detail="Database error")
-    except Exception as e:
-        logger.error(f"Unexpected error in update_archived_list: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-@app.delete("/api/archived-lists/{list_id}")
-async def delete_archived_list(
-    list_id: str,
-    user: Dict[str, Any] = Depends(get_current_user)
-):
-    try:
-        with get_database() as db:
-            result = db.archived_lists.update_one(
-                {"user_id": user["id"]},
-                {"$pull": {"lists": {"_id": list_id}}}
-            )
-            
-            if result.modified_count == 0:
-                raise HTTPException(status_code=404, detail="List not found")
-            
-            return {"ok": True}
-    except PyMongoError as e:
-        logger.error(f"Database error in delete_archived_list: {e}")
-        raise HTTPException(status_code=500, detail="Database error")
-    except Exception as e:
-        logger.error(f"Unexpected error in delete_archived_list: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+@app.get("/")
+async def root():
+    """Root endpoint for API health check"""
+    return {
+        "status": "ok",
+        "message": f"{PROJECT_NAME} is running",
+        "version": VERSION
+    }

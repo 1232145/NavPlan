@@ -1,3 +1,0 @@
-Import from google maps your favorite list
---Login with google--
-Prompt for current location

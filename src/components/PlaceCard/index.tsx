@@ -1,21 +1,25 @@
 import React, { useRef, useState } from 'react';
 import { Place } from '../../types';
+import { useImageError } from '../../hooks/useImageError';
 import './index.css';
 import confetti from 'canvas-confetti';
 import { Button } from '../Button';
+import { Heart, Image as ImageIcon } from 'lucide-react';
 
 export interface PlaceCardProps {
   place: Place;
   onAddToFavorites?: (place: Place) => void;
   onRemoveFavorite?: (place: Place) => void;
+  isSaved?: boolean;
 }
 
-export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, onRemoveFavorite }) => {
+export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, onRemoveFavorite, isSaved = false }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [showFullNote, setShowFullNote] = useState(false);
+  const { imageError, handleImageError } = useImageError();
 
   const handleAddToFavorites = () => {
-    if (onAddToFavorites) {
+    if (onAddToFavorites && !isSaved) {
       onAddToFavorites(place);
       // Firework/confetti effect
       if (cardRef.current) {
@@ -27,12 +31,25 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, o
             x: (rect.left + rect.width / 2) / window.innerWidth,
             y: (rect.top + rect.height / 2) / window.innerHeight,
           },
-          zIndex: 9999,
+          zIndex: 100,
         });
       } else {
-        confetti({ particleCount: 80, spread: 70, zIndex: 9999 });
+        confetti({ particleCount: 80, spread: 70, zIndex: 100 });
       }
     }
+  };
+
+  // Handle hover for map marker highlighting
+  const handleMouseEnter = () => {
+    window.dispatchEvent(new CustomEvent('place-hover', { 
+      detail: { placeId: place.id, hovering: true } 
+    }));
+  };
+
+  const handleMouseLeave = () => {
+    window.dispatchEvent(new CustomEvent('place-hover', { 
+      detail: { placeId: place.id, hovering: false } 
+    }));
   };
 
   // Note display logic
@@ -41,19 +58,30 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, o
   const noteToShow = showFullNote || !hasLongNote ? place.note : place.note?.slice(0, MAX_NOTE_PREVIEW) + '...';
 
   return (
-    <div className="place-card" ref={cardRef}>
-      {place.photos && place.photos.length > 0 && (
+    <div 
+      className="place-card" 
+      ref={cardRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+    >
+      {place.photos && place.photos.length > 0 && !imageError ? (
         <img
           src={place.photos[0]}
           alt={place.name}
+          onError={handleImageError}
         />
+      ) : (
+        <div className="image-placeholder">
+          <ImageIcon size={32} />
+          <span>{place.name}</span>
+        </div>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <h3>{place.name}</h3>
         <p>{place.address}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 6 }}>
           {place.rating && (
-            <span className="rating">★ {place.rating}{place.userRatingCount ? ` (${place.userRatingCount})` : ''}</span>
+            <span className="place-card-rating">★ {place.rating}{place.userRatingCount ? ` (${place.userRatingCount})` : ''}</span>
           )}
           {typeof place.priceLevel === 'number' && (
             <span style={{ fontSize: 13, color: '#555' }}>Price: {'$'.repeat(place.priceLevel)}</span>
@@ -95,13 +123,14 @@ export const PlaceCard: React.FC<PlaceCardProps> = ({ place, onAddToFavorites, o
         )}
         <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           {onAddToFavorites && (
-            <Button
-              variant="primary"
-              size="sm"
+            <button
+              className={`heart-button ${isSaved ? 'saved' : ''}`}
               onClick={handleAddToFavorites}
+              disabled={isSaved}
+              aria-label={isSaved ? "Place is saved" : "Add to favorites"}
             >
-              Add to Favorites
-            </Button>
+              <Heart size={25} fill={isSaved ? "#ef4444" : "none"} />
+            </button>
           )}
           {onRemoveFavorite && (
             <Button
