@@ -2,6 +2,22 @@
 
 A smart travel planning application that helps users discover amazing places and generate optimized day itineraries using AI-powered recommendations.
 
+> **Live Demo**: [xxx](xxx) 
+> **Source Code**: [https://github.com/1232145/NavPlan](https://github.com/1232145/NavPlan)
+
+### **MongoDB Atlas **
+- **Geospatial Queries**: 2dsphere indexes for location-based POI discovery within radius searches
+- **Text Search**: Full-text search across POI names, categories, and addresses for semantic place discovery
+- **Aggregation Pipelines**: Complex queries combining geospatial, text search, and relevance scoring
+- **Atlas Search**: Enhanced search capabilities for intelligent place recommendations
+
+### **Google Cloud Platform **
+- **Maps JavaScript API**: Interactive map visualization and place selection
+- **Places API**: Real-time place details, photos, and business information
+- **Geocoding API**: Address-to-coordinates conversion for location processing  
+- **Directions API**: Route optimization and travel time calculations
+- **OAuth 2.0**: Secure user authentication and profile management
+
 ## ✨ Features
 
 - **🔍 Smart Place Discovery**: Search and discover places using Google Maps integration

@@ -18,6 +18,8 @@ VERSION = "1.0.0"
 # CORS Configuration
 CORS_ORIGINS = [
     "http://localhost:3000",  # Frontend dev server
+    "https://*.vercel.app",   # Vercel deployments
+    "https://nav-plan.vercel.app",  # Production frontend URL
 ]
 
 # Google Auth Configuration

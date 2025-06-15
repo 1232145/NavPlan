@@ -43,15 +43,9 @@ class PublicDataService:
         """
         try:
             with get_database() as db:
-                # Debug: Check total POIs in database
-                total_pois_in_db = db.public_pois.count_documents({})
-                logger.info(f"Database contains {total_pois_in_db} total POIs")
-                
-                # Debug: Check if this location has been generated before
                 location_pois = db.public_pois.count_documents({
                     "generated_for_location": {"$regex": f"^{latitude:.6f},{longitude:.6f}"}
                 })
-                logger.info(f"POIs previously generated for this location: {location_pois}")
                 
                 # Step 1: Check existing data in MongoDB first
                 logger.info(f"Checking existing POI data near ({latitude}, {longitude})")
