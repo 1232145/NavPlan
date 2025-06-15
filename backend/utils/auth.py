@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 async def get_current_user(request: Request) -> Dict[str, Any]:
     """
-    Dependency to get current user from session token.
+    Dependency to get current user from Authorization header.
     
     Args:
-        request: The FastAPI request object containing cookies
+        request: The FastAPI request object containing Authorization header
         
     Returns:
         Dict containing user information
@@ -21,9 +21,17 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
     Raises:
         HTTPException: If user is not logged in or token is invalid
     """
-    token = request.cookies.get("session")
+    # Try Authorization header first (Bearer token)
+    auth_header = request.headers.get("authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ")[1]
+    else:
+        # Fallback to cookie for backward compatibility
+        token = request.cookies.get("session")
+    
     if not token:
         raise HTTPException(status_code=401, detail="Not logged in")
+    
     try:
         idinfo = id_token.verify_oauth2_token(token, grequests.Request(), GOOGLE_CLIENT_ID)
         return {

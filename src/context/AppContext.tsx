@@ -85,10 +85,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const checkSession = async (): Promise<boolean> => {
     try {
+      // Check if we have a token in localStorage
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setUser(null);
+        return false;
+      }
+      
       const res = await api.get('/me');
       setUser(res.data.user);
       return true;
     } catch (e) {
+      // Clear invalid token
+      localStorage.removeItem('auth_token');
       setUser(null);
       return false;
     }

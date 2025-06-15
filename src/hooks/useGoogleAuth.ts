@@ -26,6 +26,12 @@ export const useGoogleAuth = (): UseGoogleAuthReturn => {
   const handleGoogleSignIn = async (credential: string) => {
     try {
       const res = await api.post('/auth/google', { token: credential });
+      
+      // Store token in localStorage
+      if (res.data.token) {
+        localStorage.setItem('auth_token', res.data.token);
+      }
+      
       setUser(res.data.user);
       navigate('/');
     } catch (err) {

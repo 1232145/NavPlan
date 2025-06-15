@@ -31,17 +31,11 @@ async def google_auth(request: Request):
             "name": idinfo.get("name"),
             "picture": idinfo.get("picture"),
         }
-        response = JSONResponse({"user": user})
-        response.set_cookie(
-            key="session", 
-            value=token, 
-            httponly=True, 
-            secure=True,  # Required for cross-origin HTTPS
-            samesite="none",  # Required for cross-origin
-            max_age=3600,
-            domain=None  # Allow cross-origin
-        )
-        return response
+        # Return user data with token for frontend to store
+        return JSONResponse({
+            "user": user,
+            "token": token
+        })
     except Exception as e:
         logger.error(f"Google auth error: {e}")
         raise HTTPException(status_code=401, detail="Invalid token")
