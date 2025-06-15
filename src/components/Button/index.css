@@ -48,7 +48,7 @@
 }
 
 /* Secondary (green) */
-.btn-secondary {
+/* .btn-secondary {
   background: #10b981;
   color: #fff;
 }
@@ -58,7 +58,7 @@
   box-shadow: 0 2px 8px rgba(16,185,129,0.10);
 }
 .btn-secondary:active {
-  background: #047857;
+  background: #047857; */
 }
 
 /* Danger (red) */

@@ -20,6 +20,7 @@
   width: 90%;
   padding: 15px;
   margin-top: 12px;
+  margin-bottom: 12px;
   background-color: var(--background-color);
   border-bottom: 1px solid var(--border-color);
   font-weight: bold;
@@ -200,4 +201,18 @@
   height: 100%;
   color: var(--text-secondary);
   font-size: 1.2em;
+}
+
+/* Save Schedule Button Styles */
+.schedule-save-section {
+  padding: 5px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+}
+
+.save-schedule-button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 } 

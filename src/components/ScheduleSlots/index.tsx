@@ -1,69 +1,27 @@
 import React, { useState, useCallback } from 'react';
-import { ArchivedList, SavedSchedule, TravelMode } from '../../types';
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Star, 
-  StarOff, 
-  Trash2, 
-  Eye,
-  MoreVertical,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
+import { ArchivedList, SavedSchedule } from '../../types';
+import { Calendar, Star, Clock, MapPin, ChevronUp, ChevronDown } from 'lucide-react';
 import './index.css';
+
+// Travel mode icons
+const TRAVEL_MODE_ICONS: { [key: string]: string } = {
+  "walking": "🚶",
+  "bicycling": "🚲", 
+  "driving": "🚗",
+  "transit": "🚆",
+};
 
 interface ScheduleSlotsProps {
   list: ArchivedList;
   onViewSchedule: (schedule: SavedSchedule) => void;
-  onDeleteSchedule: (scheduleId: string) => void;
-  onToggleFavorite: (scheduleId: string, isFavorite: boolean) => void;
   onSaveNewSchedule?: (slotNumber?: number) => void;
-  loading?: boolean;
 }
-
-interface SlotMenuState {
-  scheduleId: string | null;
-  position: { x: number; y: number } | null;
-}
-
-const TRAVEL_MODE_ICONS: Record<TravelMode, string> = {
-  walking: '🚶',
-  driving: '🚗',
-  bicycling: '🚲',
-  transit: '🚆'
-};
 
 const ScheduleSlots: React.FC<ScheduleSlotsProps> = ({
   list,
-  onViewSchedule,
-  onDeleteSchedule,
-  onToggleFavorite,
-  loading = false
+  onViewSchedule
 }) => {
-  const [menuState, setMenuState] = useState<SlotMenuState>({ scheduleId: null, position: null });
   const [isExpanded, setIsExpanded] = useState(false);
-
-  // Close menu when clicking outside
-  const closeMenu = useCallback(() => {
-    setMenuState({ scheduleId: null, position: null });
-  }, []);
-
-  // Handle menu toggle
-  const toggleMenu = useCallback((scheduleId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    const rect = event.currentTarget.getBoundingClientRect();
-    
-    if (menuState.scheduleId === scheduleId) {
-      closeMenu();
-    } else {
-      setMenuState({
-        scheduleId,
-        position: { x: rect.right - 200, y: rect.bottom + 5 }
-      });
-    }
-  }, [menuState.scheduleId, closeMenu]);
 
   // Format time display
   const formatTime = useCallback((time: string): string => {
@@ -97,8 +55,6 @@ const ScheduleSlots: React.FC<ScheduleSlotsProps> = ({
 
   // Render minimal slot header for collapsed state
   const renderSlotHeader = useCallback((schedule: SavedSchedule | null, slotNumber: number) => {
-    const isMenuOpen = schedule && menuState.scheduleId === schedule.metadata.schedule_id;
-    
     return (
       <div 
         className={`slot-header-minimal ${schedule ? 'filled' : 'empty'}`}
@@ -114,69 +70,10 @@ const ScheduleSlots: React.FC<ScheduleSlotsProps> = ({
         
         <div className="slot-header-actions">
           <span className="slot-number">Slot {slotNumber}</span>
-          {schedule && (
-            <button
-              className="menu-button"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleMenu(schedule.metadata.schedule_id, e);
-              }}
-              disabled={loading}
-            >
-              <MoreVertical size={16} />
-            </button>
-          )}
         </div>
-
-        {/* Context Menu */}
-        {schedule && isMenuOpen && menuState.position && (
-          <>
-            <div className="menu-overlay" onClick={closeMenu} />
-            <div 
-              className="schedule-menu"
-              style={{ 
-                left: menuState.position.x, 
-                top: menuState.position.y 
-              }}
-            >
-              <button
-                className="menu-item"
-                onClick={() => {
-                  onViewSchedule(schedule);
-                  closeMenu();
-                }}
-              >
-                <Eye size={16} />
-                View Schedule
-              </button>
-              
-              <button
-                className="menu-item"
-                onClick={() => {
-                  onToggleFavorite(schedule.metadata.schedule_id, !schedule.metadata.is_favorite);
-                  closeMenu();
-                }}
-              >
-                {schedule.metadata.is_favorite ? <StarOff size={16} /> : <Star size={16} />}
-                {schedule.metadata.is_favorite ? 'Remove Favorite' : 'Mark Favorite'}
-              </button>
-              
-              <button
-                className="menu-item danger"
-                onClick={() => {
-                  onDeleteSchedule(schedule.metadata.schedule_id);
-                  closeMenu();
-                }}
-              >
-                <Trash2 size={16} />
-                Delete Schedule
-              </button>
-            </div>
-          </>
-        )}
       </div>
     );
-  }, [menuState, toggleMenu, closeMenu, onViewSchedule, onToggleFavorite, onDeleteSchedule, loading]);
+  }, [onViewSchedule]);
 
   // Render expanded content for a schedule
   const renderExpandedContent = useCallback((schedule: SavedSchedule) => (
