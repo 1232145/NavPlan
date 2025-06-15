@@ -212,7 +212,6 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
         }
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
-        margin="dense"
       />
 
       <div className="schedule-location-option-container">

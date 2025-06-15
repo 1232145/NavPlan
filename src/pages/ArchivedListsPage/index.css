@@ -432,10 +432,9 @@
   border-color: var(--color-error-600);
 }
 
-.delete-button-header:hover {
-  background: linear-gradient(135deg, 
-    var(--color-error-600) 0%, 
-    var(--color-error-700) 100%);
+.archived-list-header .archived-list-header-actions .btn.delete-button-header:hover {
+  background: #dc2626;
+  color: white;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }

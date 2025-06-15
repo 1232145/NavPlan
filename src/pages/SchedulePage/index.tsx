@@ -27,19 +27,27 @@ import ScheduleTimelinePanel from '../../components/ScheduleTimelinePanel';
 import SaveScheduleDialog from '../../components/SaveScheduleDialog';
 import NavbarColumn from '../../components/NavbarColumn';
 import { Button } from '../../components/Button';
-import { Bookmark } from 'lucide-react';
+import { Bookmark, ArrowLeft } from 'lucide-react';
 import './index.css';
 
-import { DEFAULT_MAP_CENTER, TRAVEL_MODES } from '../../constants/common';
+// Default location (New York) as fallback
+const DEFAULT_CENTER = { lat: 40.7128, lng: -74.0060 };
+
+// Travel mode options
+const TRAVEL_MODES = [
+  { value: "walking", label: "Walking", icon: "🚶" },
+  { value: "driving", label: "Driving", icon: "🚗" },
+  { value: "bicycling", label: "Bicycling", icon: "🚲" },
+  { value: "transit", label: "Transit", icon: "🚆" }
+];
 
 const SchedulePage: React.FC = () => {
   const { currentSchedule, favoritePlaces, sourceArchiveList } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
-  const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [travelMode, setTravelMode] = useState("walking");
   const [viewingSavedSchedule, setViewingSavedSchedule] = useState<SavedSchedule | null>(null);
-  const [hasScheduleBeenSaved, setHasScheduleBeenSaved] = useState(false);
   
   // Archive schedule management
   const archiveSchedules = useArchiveSchedules();
@@ -52,11 +60,6 @@ const SchedulePage: React.FC = () => {
       setTravelMode(savedSchedule.metadata.travel_mode);
     }
   }, [location.state]);
-
-  // Reset save state when current schedule changes (new schedule generated)
-  useEffect(() => {
-    setHasScheduleBeenSaved(false);
-  }, [currentSchedule]);
 
   // Redirect to map if no schedule and not viewing saved schedule
   useEffect(() => {
@@ -111,9 +114,7 @@ const SchedulePage: React.FC = () => {
   // Handle successful schedule save
   const handleScheduleSaved = async () => {
     console.log('Schedule saved successfully!');
-    setHasScheduleBeenSaved(true);
     // Could show a toast notification here
-    navigate('/lists', { state: { refreshLists: true } });
   };
 
   // Get the schedule to display (either current or saved)
@@ -176,17 +177,26 @@ const SchedulePage: React.FC = () => {
       <div className="schedule-container-wrapper">
         {/* Schedule Header with Actions */}
         <div className="schedule-header-actions">
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => navigate(isViewingSaved ? '/archived-lists' : '/map')}
+            className="back-to-map-button"
+          >
+            <ArrowLeft size={16} />
+            {isViewingSaved ? 'Back to Lists' : 'Back to Map'}
+          </Button>
+          
           {/* Save button only for current schedules with source list */}
           {!isViewingSaved && currentSchedule && sourceArchiveList && (
             <Button
-              variant={hasScheduleBeenSaved ? "secondary" : "primary"}
+              variant="primary"
               size="md"
               onClick={handleSaveSchedule}
               className="save-schedule-button"
-              disabled={hasScheduleBeenSaved}
             >
               <Bookmark size={16} />
-              {hasScheduleBeenSaved ? "Saved to" : "Save to"} "{sourceArchiveList.name}"
+              Save to "{sourceArchiveList.name}"
             </Button>
           )}
 
