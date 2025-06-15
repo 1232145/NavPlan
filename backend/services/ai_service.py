@@ -22,43 +22,79 @@ try:
         global _embedding_model
         if _embedding_model is None:
             try:
-                # Use a small, efficient model that works well for semantic search
+                # Try the smallest efficient model first
                 _embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
                 logger.info("Loaded sentence-transformers model: all-MiniLM-L6-v2")
             except Exception as e:
-                logger.error(f"Failed to load sentence-transformers model: {e}")
-                return None
+                logger.warning(f"Failed to load sentence-transformers model: {e}")
+                try:
+                    # Fallback to even smaller model
+                    _embedding_model = SentenceTransformer('paraphrase-MiniLM-L3-v2')
+                    logger.info("Loaded fallback model: paraphrase-MiniLM-L3-v2")
+                except Exception as e2:
+                    logger.error(f"All embedding models failed: {e2}")
+                    return None
         return _embedding_model
         
 except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
-    logger.warning("sentence-transformers not available. Vector search will be disabled.")
+    logger.warning("sentence-transformers not available. Using TF-IDF fallback for vector search.")
     
     def get_embedding_model():
         return None
 
+# TF-IDF fallback for when sentence-transformers is not available
+try:
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity as sklearn_cosine_similarity
+    SKLEARN_AVAILABLE = True
+    _tfidf_vectorizer = None
+    
+    def get_tfidf_vectorizer():
+        global _tfidf_vectorizer
+        if _tfidf_vectorizer is None:
+            _tfidf_vectorizer = TfidfVectorizer(
+                max_features=1000,
+                stop_words='english',
+                ngram_range=(1, 2)
+            )
+        return _tfidf_vectorizer
+        
+except ImportError:
+    SKLEARN_AVAILABLE = False
+    logger.warning("scikit-learn not available. Vector search will be limited.")
+
 async def create_place_embedding(place_text: str) -> List[float]:
     """
-    Create embedding for place using local sentence-transformers model
+    Create embedding for place using sentence-transformers or TF-IDF fallback
     """
     try:
-        if not SENTENCE_TRANSFORMERS_AVAILABLE:
-            logger.warning("sentence-transformers not available for embeddings")
-            return []
-            
-        model = get_embedding_model()
-        if model is None:
-            logger.warning("Could not load embedding model")
-            return []
-            
-        # Generate embedding using sentence-transformers
-        embedding = model.encode(place_text, convert_to_tensor=False)
+        # Try sentence-transformers first
+        if SENTENCE_TRANSFORMERS_AVAILABLE:
+            model = get_embedding_model()
+            if model is not None:
+                # Generate embedding using sentence-transformers
+                embedding = model.encode(place_text, convert_to_tensor=False)
+                
+                # Convert to list if it's a numpy array
+                if hasattr(embedding, 'tolist'):
+                    return embedding.tolist()
+                else:
+                    return list(embedding)
         
-        # Convert to list if it's a numpy array
-        if hasattr(embedding, 'tolist'):
-            return embedding.tolist()
-        else:
-            return list(embedding)
+        # Fallback to TF-IDF if sentence-transformers not available
+        if SKLEARN_AVAILABLE:
+            logger.info("Using TF-IDF fallback for embedding")
+            # For TF-IDF, we'll return a simple hash-based representation
+            # This is a simplified approach for the free tier
+            import hashlib
+            text_hash = hashlib.md5(place_text.encode()).hexdigest()
+            # Convert hash to a simple numeric vector
+            vector = [float(int(text_hash[i:i+2], 16)) / 255.0 for i in range(0, min(32, len(text_hash)), 2)]
+            return vector[:16]  # Return 16-dimensional vector
+            
+        logger.warning("No embedding method available")
+        return []
                 
     except Exception as e:
         logger.error(f"Error creating embedding: {e}")
