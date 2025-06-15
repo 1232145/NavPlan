@@ -430,14 +430,19 @@
     var(--color-error-500) 0%, 
     var(--color-error-600) 100%);
   border-color: var(--color-error-600);
+  color: white;
 }
 
-.delete-button-header:hover {
+.delete-button-header:hover,
+.delete-button-header:focus,
+.delete-button-header:active {
   background: linear-gradient(135deg, 
-    var(--color-error-600) 0%, 
-    var(--color-error-700) 100%);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+    var(--color-error-500) 0%, 
+    var(--color-error-600) 100%) !important;
+  border-color: var(--color-error-600) !important;
+  color: white !important;
+  transform: none !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
 .save-button-header {

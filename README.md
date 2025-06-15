@@ -111,7 +111,7 @@ pip install -r requirements.txt
 #### Frontend Setup
 ```bash
 npm install
-npm run dev
+npm run dev -- --port 3000
 ```
 
 The application will be available at:
