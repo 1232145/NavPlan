@@ -1,7 +1,7 @@
 import logging
 import json
 import re # Import the re module
-import numpy as np
+import math
 from typing import List, Dict, Any, Tuple, Optional
 import httpx
 from config import GOOGLE_API_KEY, OPENROUTER_API_KEY
@@ -341,13 +341,13 @@ def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """
     try:
         # Convert to numpy arrays
-        a = np.array(vec1)
-        b = np.array(vec2)
+        a = vec1
+        b = vec2
         
         # Calculate cosine similarity
-        dot_product = np.dot(a, b)
-        norm_a = np.linalg.norm(a)
-        norm_b = np.linalg.norm(b)
+        dot_product = sum(a[i] * b[i] for i in range(len(a)))
+        norm_a = math.sqrt(sum(x**2 for x in a))
+        norm_b = math.sqrt(sum(x**2 for x in b))
         
         if norm_a == 0 or norm_b == 0:
             return 0.0
