@@ -18,8 +18,9 @@ VERSION = "1.0.0"
 # CORS Configuration
 CORS_ORIGINS = [
     "http://localhost:3000",  # Frontend dev server
-    "https://*.vercel.app",   # Vercel deployments
-    "https://*.railway.app",  # Railway deployments
+    "http://localhost:5173",  # Vite dev server
+    "https://nav-plan.vercel.app",  # Vercel production
+    "https://navplan-production.up.railway.app",  # Railway backend
 ]
 
 # Google Auth Configuration
