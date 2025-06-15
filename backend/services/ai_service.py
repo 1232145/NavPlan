@@ -783,7 +783,19 @@ CRITICAL TIME CONSTRAINTS:
 - Aim to finish all activities by {end_time} at the latest
 """
 
-    # Improved meal planning guidelines
+    # Route optimization guidelines
+    route_optimization_guidelines = """
+ROUTE OPTIMIZATION (HIGHEST PRIORITY):
+- MINIMIZE total travel distance and time between places
+- Create a logical geographical flow - avoid zigzagging back and forth
+- Group nearby places together in the sequence
+- If places A, B, C are in a line, visit them in order (A→B→C) not (A→C→B)
+- Consider the starting location and plan the most efficient circular or linear route
+- NEVER go past a place only to return to it later if it can be avoided
+- Prioritize geographical efficiency over strict activity type spacing when reasonable
+"""
+
+    # Meal planning guidelines
     meal_planning_guidelines = """
 MEAL SPACING REQUIREMENTS:
 - NEVER place two restaurants consecutively in the schedule
@@ -816,7 +828,7 @@ REALISTIC VISIT DURATIONS (include buffer time):
         max_places = min(8, max(4, total_available_minutes // 90))  # Conservative place count based on time
         selection_instructions = f"""
 Select {max_places} places maximum to create a realistic full day itinerary from {start_time} to {end_time}.
-PRIORITIZE: meal timing, geographical proximity, variety of experiences.
+PRIORITIZE: 1) Route efficiency (minimize travel), 2) Meal timing, 3) Variety of experiences.
 ENSURE: The schedule fits within the {total_available_minutes} minute time window.
 """
         
@@ -832,6 +844,7 @@ Your response must be a JSON object with the following keys:
         # For small lists or existing schedules
         selection_instructions = f"""
 Create a realistic full day itinerary from {start_time} to {end_time}, ordering the places optimally.
+PRIORITIZE: 1) Route efficiency (minimize travel), 2) Meal timing, 3) Activity variety.
 ENSURE the schedule fits within the {total_available_minutes} minute time window.
 """
         output_format_str = """
@@ -847,6 +860,8 @@ Your response must be a JSON object with the following keys:
 
 {time_management_guidelines}
 
+{route_optimization_guidelines}
+
 Places (enriched with public data insights):
 {places_description}
 
@@ -856,14 +871,15 @@ Places (enriched with public data insights):
 
 {visit_duration_guidelines}
 
-CRITICAL REQUIREMENTS:
-1. User preferences: {prompt_text if prompt_text else "Prioritize a logical flow with varied activities and well-spaced meals throughout the day."}
-2. Travel mode: {travel_mode.value if isinstance(travel_mode, TravelMode) else travel_mode}
-3. TIME CONSTRAINT: All activities MUST end by {end_time}
-4. MEAL SPACING: NEVER schedule restaurants consecutively - always have 2+ non-food places between meals
-5. QUALITY OVER QUANTITY: End schedule early rather than repeating similar venue types
-6. DIVERSITY: Prioritize variety in place types over total number of places
-7. REALISM: Account for travel time and realistic visit durations
+CRITICAL REQUIREMENTS (in priority order):
+1. ROUTE EFFICIENCY: Minimize total travel distance - create logical geographical flow
+2. User preferences: {prompt_text if prompt_text else "Prioritize a logical flow with varied activities and well-spaced meals throughout the day."}
+3. Travel mode: {travel_mode.value if isinstance(travel_mode, TravelMode) else travel_mode}
+4. TIME CONSTRAINT: All activities MUST end by {end_time}
+5. MEAL SPACING: NEVER schedule restaurants consecutively - always have 2+ non-food places between meals
+6. QUALITY OVER QUANTITY: End schedule early rather than repeating similar venue types
+7. DIVERSITY: Prioritize variety in place types over total number of places
+8. REALISM: Account for travel time and realistic visit durations
 
 {output_format_str}
 """ 
