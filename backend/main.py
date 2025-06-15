@@ -2,6 +2,7 @@
 # uvicorn main:app --host localhost --port 8000 --reload
 import logging
 import time
+import os
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -89,3 +90,9 @@ async def root():
         "message": f"{PROJECT_NAME} is running",
         "version": VERSION
     }
+
+# Railway deployment entry point
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
