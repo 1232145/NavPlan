@@ -73,7 +73,7 @@ const categorizePlaceType = (placeType: string): string => {
 // Get available categories based on archive list places
 const getAvailableCategories = (places: Place[]): typeof CATEGORY_OPTIONS => {
   if (!places || places.length === 0) return CATEGORY_OPTIONS;
-  
+
   const availableTypes = new Set(places.map(place => categorizePlaceType(place.placeType)));
   return CATEGORY_OPTIONS.filter(category => availableTypes.has(category.id));
 };
@@ -89,16 +89,16 @@ const hasMealPlaces = (places: Place[]): boolean => {
 
 const isCurrentLocationNearArchiveList = (currentLocation: Coordinates | null, places: Place[]): boolean => {
   if (!currentLocation || !places || places.length === 0) return false;
-  
+
   // Calculate average center of archived places
   const avgLat = places.reduce((sum, place) => sum + place.location.lat, 0) / places.length;
   const avgLng = places.reduce((sum, place) => sum + place.location.lng, 0) / places.length;
-  
+
   // Calculate distance between current location and center of archived places
   const distance = Math.sqrt(
     Math.pow(currentLocation.lat - avgLat, 2) + Math.pow(currentLocation.lng - avgLng, 2)
   );
-  
+
   // If within ~50km (roughly 0.45 degrees), consider it the same area
   return distance < 0.45;
 };
@@ -115,30 +115,30 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
 }) => {
   const { currentLocation } = useAppContext();
   const [currentStep, setCurrentStep] = useState(1);
-  
+
   // Basic settings (Step 1)
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('19:00');
   const [prompt, setPrompt] = useState('');
   const [includeCurrentLocation, setIncludeCurrentLocation] = useState(true);
-  
+
   // Location settings - REUSED for both AI recommendations and archived list starting points
   const [isCustomLocation, setIsCustomLocation] = useState<boolean>(false);
   const [customLocationName, setCustomLocationName] = useState<string>('');
-  const [customLocationCoords, setCustomLocationCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [customLocationCoords, setCustomLocationCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [locationSuggestions, setLocationSuggestions] = useState<Place[]>([]);
-  
+
   // Auto-search when user types (debounced)
   useEffect(() => {
     const searchLocations = async () => {
-      const query = customLocationName.trim();      
+      const query = customLocationName.trim();
       if (!isCustomLocation || query.length < 3) {
         setLocationSuggestions([]);
         setCustomLocationCoords(null);
         return;
       }
-      
+
       setIsSearchingLocation(true);
       try {
         const results = await MapService.searchPlaces(query);
@@ -163,7 +163,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
     });
     setLocationSuggestions([]);
   };
-  
+
   // Advanced preferences (Step 2)
   const [mustInclude, setMustInclude] = useState<string[]>([]);
   const [balanceMode, setBalanceMode] = useState<'focused' | 'balanced' | 'diverse'>('balanced');
@@ -232,8 +232,8 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
   };
 
   const toggleCategory = (categoryId: string) => {
-    setMustInclude(prev => 
-      prev.includes(categoryId) 
+    setMustInclude(prev =>
+      prev.includes(categoryId)
         ? prev.filter(id => id !== categoryId)
         : [...prev, categoryId]
     );
@@ -247,8 +247,8 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
       return "AI will discover amazing places near your current location and create an optimized schedule.";
     }
     if (placeCount) {
-      const startingPointText = isCustomLocation && customLocationName 
-        ? ` starting from ${customLocationName}` 
+      const startingPointText = isCustomLocation && customLocationName
+        ? ` starting from ${customLocationName}`
         : '';
       return `Generating a schedule for ${placeCount} places${startingPointText}. Our AI will optimize your day based on locations and preferences.`;
     }
@@ -284,7 +284,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
           />
         </div>
       </div>
-      
+
       {isLocationBased && (
         <>
           <p className="schedule-dialog-label">
@@ -311,7 +311,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
                 </span>
               </div>
             </label>
-            
+
             <label className="location-mode-option">
               <input
                 type="radio"
@@ -350,7 +350,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
                 {isSearchingLocation && (
                   <div className="search-loading">🔍</div>
                 )}
-                
+
                 {locationSuggestions.length > 0 && (
                   <div className="location-suggestions">
                     {locationSuggestions.map((place, index) => (
@@ -366,7 +366,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
                   </div>
                 )}
               </div>
-              
+
               {customLocationCoords && (
                 <div className="selected-location">
                   ✓ Selected: {customLocationName}
@@ -401,14 +401,14 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
                   {isCurrentLocationNearList ? "Use my current location" : "No specific starting point"}
                 </span>
                 <span className="location-mode-description">
-                  {isCurrentLocationNearList 
+                  {isCurrentLocationNearList
                     ? (currentLocation ? '✓ Current location available' : 'Location will be requested')
                     : "AI will optimize the route without a fixed starting location"
                   }
                 </span>
               </div>
             </label>
-            
+
             <label className="location-mode-option">
               <input
                 type="radio"
@@ -447,7 +447,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
                 {isSearchingLocation && (
                   <div className="search-loading">🔍</div>
                 )}
-                
+
                 {locationSuggestions.length > 0 && (
                   <div className="location-suggestions">
                     {locationSuggestions.map((place, index) => (
@@ -463,7 +463,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
                   </div>
                 )}
               </div>
-              
+
               {customLocationCoords && (
                 <div className="selected-location">
                   ✓ Starting point: {customLocationName}
@@ -473,7 +473,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
           )}
         </>
       )}
-      
+
       <p className="schedule-dialog-label">
         <Info size={16} /> Custom preferences (optional):
       </p>
@@ -481,7 +481,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
         multiline
         rows={3}
         fullWidth
-        placeholder={isLocationBased 
+        placeholder={isLocationBased
           ? "E.g., 'I love outdoor activities and local food' or 'Focus on museums and cultural attractions'"
           : "E.g., 'I like family restaurants and outdoor activities' or 'Focus on cultural attractions and cafes'"
         }
@@ -492,11 +492,11 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
       {isLocationBased && !isCustomLocation && (
         <div className="schedule-location-option-container">
           <div className="schedule-location-option">
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               className="schedule-settings-checkbox"
-              checked={includeCurrentLocation} 
-              onChange={e => setIncludeCurrentLocation(e.target.checked)} 
+              checked={includeCurrentLocation}
+              onChange={e => setIncludeCurrentLocation(e.target.checked)}
             />
             <div className="schedule-location-option-content">
               <span className="schedule-location-option-label">Include my current location as starting point</span>
@@ -526,10 +526,10 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
       <p className="schedule-preferences-description">
         Select categories you want to prioritize. If none selected, we'll create a balanced mix.
       </p>
-      
+
       <div className="schedule-categories-grid">
         {availableCategories.map(category => (
-          <div 
+          <div
             key={category.id}
             className={`schedule-category-option ${mustInclude.includes(category.id) ? 'selected' : ''}`}
             onClick={() => toggleCategory(category.id)}
@@ -568,18 +568,18 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
 
       <div className="schedule-advanced-options">
         {showMealOption && (
-        <div className="schedule-option-row">
-          <label className="schedule-meal-option">
-            <input
-              type="checkbox"
-              checked={mealRequirements}
-              onChange={(e) => setMealRequirements(e.target.checked)}
-            />
-            <span>Ensure meal coverage (breakfast, lunch, dinner based on schedule time)</span>
-          </label>
-        </div>
+          <div className="schedule-option-row">
+            <label className="schedule-meal-option">
+              <input
+                type="checkbox"
+                checked={mealRequirements}
+                onChange={(e) => setMealRequirements(e.target.checked)}
+              />
+              <span>Ensure meal coverage (breakfast, lunch, dinner based on schedule time)</span>
+            </label>
+          </div>
         )}
-        
+
         <div className="schedule-option-row">
           <label htmlFor="max-places">Maximum places in schedule:</label>
           {archiveListPlaces ? (
@@ -594,11 +594,11 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
             />
           ) : (
             <input
-            id="max-places"
+              id="max-places"
               type="number"
               min={3}
               max={12}
-            value={maxPlaces} 
+              value={maxPlaces}
               onChange={(e) => setMaxPlaces(Math.min(12, Math.max(3, Number(e.target.value))))}
               className="schedule-max-places-input"
             />
@@ -609,7 +609,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
       <div className="schedule-preview-info">
         <div className="schedule-summary-icon"><Info size={16} /></div>
         <p>
-          {mustInclude.length > 0 
+          {mustInclude.length > 0
             ? `Will prioritize: ${mustInclude.join(', ')} in ${balanceMode} mode`
             : "Will create a balanced mix of different place types"
           }
@@ -621,10 +621,10 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
   );
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
       fullWidth
       aria-labelledby="schedule-dialog-title"
     >
@@ -638,16 +638,18 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
           </div>
         </div>
       </DialogTitle>
-      <DialogContent>
+      <DialogContent className="mui-dialog-content">
         {currentStep === 1 ? renderStep1() : renderStep2()}
       </DialogContent>
       <DialogActions className="schedule-dialog-actions">
-        <Button variant="default" size="sm" onClick={handleClose}>Cancel</Button>
+        <Button variant="default" size="md" onClick={handleClose}>
+          Cancel
+        </Button>
         <div className="schedule-dialog-navigation">
           {currentStep === 2 && (
-            <Button 
-              variant="default" 
-              size="sm" 
+            <Button
+              variant="default"
+              size="md"
               onClick={() => setCurrentStep(1)}
               className="schedule-back-button"
             >
@@ -655,18 +657,18 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
             </Button>
           )}
           {currentStep === 1 ? (
-            <Button 
-              variant="default" 
-              size="sm" 
+            <Button
+              variant="default"
+              size="md"
               onClick={() => setCurrentStep(2)}
               className="schedule-next-button"
             >
               Advanced Options <ChevronRight size={16} />
             </Button>
           ) : null}
-          <Button 
-            variant="primary" 
-            size="sm" 
+          <Button
+            variant="primary"
+            size="md"
             onClick={currentStep === 1 ? handleConfirm : handleConfirm}
           >
             Generate Schedule
