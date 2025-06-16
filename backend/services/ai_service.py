@@ -6,108 +6,50 @@ from typing import List, Dict, Any, Tuple, Optional
 import httpx
 from config import GOOGLE_API_KEY, OPENROUTER_API_KEY
 from db import get_database
-from db.models import TravelMode, BalanceMode
+from db.models import TravelMode
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Use scikit-learn for lightweight vector search
-SENTENCE_TRANSFORMERS_AVAILABLE = False
-logger.info("Using optimized lightweight vector search (32-dimensional semantic features)")
-logger.info("Vector search capabilities: ✅ Semantic matching ✅ Category detection ✅ Text analysis")
-
-# TF-IDF fallback for when sentence-transformers is not available
 try:
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.metrics.pairwise import cosine_similarity as sklearn_cosine_similarity
-    SKLEARN_AVAILABLE = True
-    _tfidf_vectorizer = None
+    from sentence_transformers import SentenceTransformer
+    import torch
+    SENTENCE_TRANSFORMERS_AVAILABLE = True
+    _embedding_model = None
     
-    def get_tfidf_vectorizer():
-        global _tfidf_vectorizer
-        if _tfidf_vectorizer is None:
-            _tfidf_vectorizer = TfidfVectorizer(
-                max_features=1000,
-                stop_words='english',
-                ngram_range=(1, 2)
-            )
-        return _tfidf_vectorizer
-        
+    def get_embedding_model():
+        global _embedding_model
+        if _embedding_model is None:
+            model_name = "all-MiniLM-L6-v2"  # 384 dimensions
+            logger.info(f"Loading sentence transformer model: {model_name}")
+            _embedding_model = SentenceTransformer(model_name)
+            logger.info("✅ Sentence transformer model loaded successfully")
+        return _embedding_model
+    
+    logger.info("Using sentence-transformers for high-quality semantic embeddings")
+    logger.info("Vector search capabilities: ✅ Advanced semantic matching ✅ Context understanding ✅ Intent detection")
+    
 except ImportError:
-    SKLEARN_AVAILABLE = False
-    logger.warning("scikit-learn not available. Vector search will be limited.")
+    SENTENCE_TRANSFORMERS_AVAILABLE = False
+    logger.warning("sentence-transformers not available. Falling back to basic text matching.")
 
 async def create_place_embedding(place_text: str) -> List[float]:
     """
-    Create embedding for place using lightweight TF-IDF approach
+    Create high-quality embedding for place using sentence-transformers
     """
     try:
-        if SKLEARN_AVAILABLE:
-            # Use a more sophisticated approach than simple hashing
-            # Create features based on text characteristics
-            import re
-            from collections import Counter
-            
-            # Clean and tokenize text
-            text_lower = place_text.lower()
-            words = re.findall(r'\b\w+\b', text_lower)
-            
-            # Create feature vector based on:
-            # 1. Word frequency features
-            # 2. Text length features  
-            # 3. Category keywords
-            # 4. Semantic indicators
-            
-            # Define category keywords for better semantic matching
-            category_keywords = {
-                'food': ['restaurant', 'cafe', 'food', 'dining', 'eat', 'meal', 'kitchen', 'bar', 'drink'],
-                'culture': ['museum', 'art', 'gallery', 'theater', 'cultural', 'history', 'exhibition'],
-                'nature': ['park', 'garden', 'outdoor', 'nature', 'green', 'tree', 'lake', 'river'],
-                'shopping': ['shop', 'store', 'market', 'mall', 'boutique', 'retail'],
-                'entertainment': ['entertainment', 'fun', 'activity', 'game', 'sport', 'recreation'],
-                'tourism': ['tourist', 'attraction', 'landmark', 'monument', 'historic', 'famous']
-            }
-            
-            # Create 32-dimensional feature vector
-            features = []
-            
-            # Category presence features (6 dimensions)
-            for category, keywords in category_keywords.items():
-                score = sum(1 for word in words if word in keywords) / max(len(words), 1)
-                features.append(score)
-            
-            # Text characteristics (8 dimensions)
-            features.extend([
-                len(words) / 20.0,  # Word count (normalized)
-                len(text_lower) / 100.0,  # Character count (normalized)
-                sum(1 for c in text_lower if c.isupper()) / max(len(text_lower), 1),  # Uppercase ratio
-                text_lower.count('!') + text_lower.count('?'),  # Excitement indicators
-                text_lower.count('great') + text_lower.count('amazing') + text_lower.count('best'),  # Positive words
-                text_lower.count('bad') + text_lower.count('poor') + text_lower.count('worst'),  # Negative words
-                len(set(words)) / max(len(words), 1),  # Vocabulary diversity
-                sum(len(word) for word in words) / max(len(words), 1)  # Average word length
-            ])
-            
-            # Most frequent words features (10 dimensions)
-            word_counts = Counter(words)
-            common_words = ['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']
-            for word in common_words[:10]:
-                features.append(word_counts.get(word, 0) / max(len(words), 1))
-            
-            # Hash-based features for uniqueness (8 dimensions)
-            import hashlib
-            text_hash = hashlib.md5(place_text.encode()).hexdigest()
-            for i in range(0, 16, 2):
-                features.append(int(text_hash[i:i+2], 16) / 255.0)
-            
-            # Ensure exactly 32 dimensions
-            features = features[:32]
-            while len(features) < 32:
-                features.append(0.0)
+        if SENTENCE_TRANSFORMERS_AVAILABLE:
+            model = get_embedding_model()
+            if model is not None:
+                embedding = model.encode(place_text, convert_to_tensor=False, show_progress_bar=False)
                 
-            return features
+                # Convert to list if it's a numpy array
+                if hasattr(embedding, 'tolist'):
+                    return embedding.tolist()
+                else:
+                    return list(embedding)
             
-        logger.warning("No embedding method available")
+        logger.warning("Sentence transformers not available, using basic text matching")
         return []
                 
     except Exception as e:
@@ -332,10 +274,6 @@ async def preference_based_selection(places: List[Dict[str, Any]], preferences: 
         return places[:12]  # Fallback to first 12 places
 
 async def simple_vector_score(places: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
-    """
-    Lightweight vector scoring for places when user has a query.
-    Much simpler than the previous complex system.
-    """
     try:
         if not SENTENCE_TRANSFORMERS_AVAILABLE or not query:
             return places
@@ -368,7 +306,7 @@ async def simple_vector_score(places: List[Dict[str, Any]], query: str) -> List[
         return [place for score, place in scored_places]
         
     except Exception as e:
-        logger.error(f"Error in simple vector scoring: {e}")
+        logger.error(f"Error in semantic vector scoring: {e}")
         return places
 
 async def vector_search_places(places: List[Dict[str, Any]], query: str, top_k: int = None) -> List[Dict[str, Any]]:
@@ -390,19 +328,23 @@ def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     Calculate cosine similarity between two vectors
     """
     try:
-        # Convert to numpy arrays
-        a = vec1
-        b = vec2
+        if len(vec1) != len(vec2):
+            logger.warning(f"Vector dimension mismatch: {len(vec1)} vs {len(vec2)}")
+            return 0.0
         
-        # Calculate cosine similarity
-        dot_product = sum(a[i] * b[i] for i in range(len(a)))
-        norm_a = math.sqrt(sum(x**2 for x in a))
-        norm_b = math.sqrt(sum(x**2 for x in b))
+        # Calculate cosine similarity using numpy-style operations
+        dot_product = sum(a * b for a, b in zip(vec1, vec2))
+        norm_a = math.sqrt(sum(x * x for x in vec1))
+        norm_b = math.sqrt(sum(x * x for x in vec2))
         
         if norm_a == 0 or norm_b == 0:
             return 0.0
         
-        return dot_product / (norm_a * norm_b)
+        similarity = dot_product / (norm_a * norm_b)
+        
+        # Clamp to valid range [-1, 1] to handle floating point errors
+        return max(-1.0, min(1.0, similarity))
+        
     except Exception as e:
         logger.error(f"Error calculating cosine similarity: {e}")
         return 0.0
