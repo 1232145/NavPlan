@@ -18,7 +18,7 @@ def create_db():
     try:
         with get_database() as db:
             # Create collections if they don't exist
-            collections = ['archived_lists', 'public_pois']
+            collections = ['archived_lists', 'public_pois', 'example_lists']
             for collection_name in collections:
                 if collection_name not in db.list_collection_names():
                     db.create_collection(collection_name)
@@ -28,6 +28,7 @@ def create_db():
             db.archived_lists.create_index("user_id")
             db.public_pois.create_index([("location", "2dsphere")])
             db.public_pois.create_index("category")
+            db.example_lists.create_index("name")
             
             print("Database setup completed successfully")
     except Exception as e:

@@ -39,6 +39,7 @@ interface AppContextType {
       end_time?: string;
       categories?: string[];
       includeCurrentLocation?: boolean;
+      locationName?: string;
     }
   ) => Promise<void>;
   searchResults: Place[];
@@ -231,10 +232,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       end_time?: string;
       categories?: string[];
       includeCurrentLocation?: boolean;
+      locationName?: string;
     } = {}
   ) => {
     setIsLoading(true);
-    setLoadingMessage('🗺️ AI is discovering amazing places near you...');
+    const locationText = options.locationName ? `in ${options.locationName}` : 'near you';
+    setLoadingMessage(`🗺️ AI is discovering amazing places ${locationText}...`);
 
     try {
       // Add progressive loading messages to indicate progress
@@ -243,7 +246,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, 2000);
 
       const progressTimer2 = setTimeout(() => {
-        setLoadingMessage('🤖 AI is optimizing your perfect day schedule with route planning...');
+        setLoadingMessage(`🤖 AI is optimizing your perfect day schedule with route planning...`);
       }, 6000);
 
       const progressTimer3 = setTimeout(() => {

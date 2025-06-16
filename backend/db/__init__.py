@@ -63,6 +63,11 @@ class DatabaseManager:
                 ("lists.date", ASCENDING)
             ])
             
+            # Create index for example lists collection
+            self._db.example_lists.create_index([
+                ("name", ASCENDING)
+            ])
+            
             logger.info("Successfully created database indexes")
         except OperationFailure as e:
             logger.error(f"Failed to create indexes: {e}")

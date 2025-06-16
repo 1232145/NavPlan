@@ -1,19 +1,16 @@
 import React from 'react';
 import { useAppContext } from '../../context/AppContext';
-import { Schedule } from '../../types';
+import { useArchiveSchedules } from '../../hooks';
+import { Schedule, TravelMode } from '../../types';
+import { Button } from '../Button';
+import SaveScheduleDialog from '../SaveScheduleDialog';
+import { Bookmark } from 'lucide-react';
+import { TRAVEL_MODES } from '../../constants/common';
 import './index.css';
 import { MdLocationOn, MdCategory } from 'react-icons/md';
 
 // Custom marker colors for better visibility
 const markerColors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#FF9800', '#9C27B0', '#795548'];
-
-// Travel mode icons
-const TRAVEL_MODE_ICONS: { [key: string]: string } = {
-  "walking": "🚶",
-  "bicycling": "🚲",
-  "driving": "🚗",
-  "transit": "🚆",
-};
 
 // Place type mapping to more readable formats
 const PLACE_TYPE_LABELS: { [key: string]: string } = {
@@ -48,17 +45,38 @@ interface ScheduleTimelinePanelProps {
   travelMode: string;
   schedule?: Schedule;
   isViewingSaved?: boolean;
+  savedScheduleName?: string;
 }
 
 const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({ 
   travelMode, 
   schedule: propSchedule,
-  isViewingSaved = false 
+  isViewingSaved = false,
+  savedScheduleName
 }) => {
-  const { currentSchedule } = useAppContext();
+  const { currentSchedule, sourceArchiveList } = useAppContext();
+  
+  // Archive schedule management
+  const archiveSchedules = useArchiveSchedules();
   
   // Use provided schedule or fall back to current schedule
   const displaySchedule = propSchedule || currentSchedule;
+
+  // Handle save schedule button click - only available for current schedules
+  const handleSaveSchedule = async () => {
+    if (!currentSchedule || !sourceArchiveList) {
+      console.error('No current schedule or source list to save to');
+      return;
+    }
+    
+    // Open save dialog with the source archive list
+    archiveSchedules.openSaveDialog(sourceArchiveList);
+  };
+
+  // Handle successful schedule save
+  const handleScheduleSaved = async () => {
+    // Could show a toast notification here
+  };
 
   // Format place type to be more readable
   const formatPlaceType = (placeType: string): string => {
@@ -80,13 +98,48 @@ const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({
 
   return (
     <div className="schedule-timeline-panel expanded">
+      {/* Save Schedule Dialog - only for current schedules */}
+      {!isViewingSaved && currentSchedule && (
+        <SaveScheduleDialog
+          open={archiveSchedules.saveDialogOpen}
+          onClose={archiveSchedules.closeSaveDialog}
+          onSave={async (options) => {
+            await archiveSchedules.saveScheduleToArchive(options);
+            handleScheduleSaved();
+          }}
+          selectedList={archiveSchedules.selectedList}
+          loading={archiveSchedules.isSavingSchedule}
+          error={archiveSchedules.error}
+          scheduleStartTime={currentSchedule.items[0]?.start_time || '09:00'}
+          scheduleEndTime={currentSchedule.items[currentSchedule.items.length - 1]?.end_time || '19:00'}
+          defaultName={sourceArchiveList ? `${sourceArchiveList.name} Schedule` : ''}
+          originalTravelMode={travelMode as TravelMode}
+        />
+      )}
+
       <div className="schedule-summary">
         <div>Total time: {Math.floor(displaySchedule.total_duration_minutes / 60)}h {displaySchedule.total_duration_minutes % 60}m</div>
         <div>Total distance: {(displaySchedule.total_distance_meters / 1000).toFixed(1)} km</div>
         {isViewingSaved && (
-          <div className="saved-schedule-indicator">📁 Saved Schedule</div>
+          <div className="saved-schedule-indicator">📁 {savedScheduleName || 'Saved Schedule'}</div>
         )}
       </div>
+
+      {/* Save button only for current schedules with source list */}
+      {!isViewingSaved && currentSchedule && sourceArchiveList && (
+        <div className="schedule-save-section">
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleSaveSchedule}
+            className="save-schedule-button"
+          >
+            <Bookmark size={16} />
+            Save to "{sourceArchiveList.name}"
+          </Button>
+        </div>
+      )}
+
       <div className="schedule-items-list">
         {displaySchedule.items.map((item, index) => (
           <div key={item.place_id} className="schedule-item-card">
@@ -122,7 +175,7 @@ const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({
             {item.travel_to_next && (
               <div className="travel-segment-card">
                 <div className="travel-infor">
-                  <i className="travel-icon">{TRAVEL_MODE_ICONS[travelMode] || TRAVEL_MODE_ICONS["walking"]}</i>
+                  <i className="travel-icon">{TRAVEL_MODES.find(mode => mode.value === travelMode)?.icon || TRAVEL_MODES[0].icon}</i>
                   <div className="travel-details">
                     <div>{item.travel_to_next.duration.text} ({item.travel_to_next.distance.text})</div>
                   </div>

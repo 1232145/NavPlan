@@ -47,20 +47,6 @@
     var(--color-primary-600) 100%);
 }
 
-/* Secondary (green) */
-.btn-secondary {
-  background: #10b981;
-  color: #fff;
-}
-.btn-secondary:hover, .btn-secondary:focus {
-  background: #059669;
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(16,185,129,0.10);
-}
-.btn-secondary:active {
-  background: #047857;
-}
-
 /* Danger (red) */
 .btn-danger {
   background: #ef4444;

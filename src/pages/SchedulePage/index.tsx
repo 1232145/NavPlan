@@ -20,31 +20,25 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppContext } from '../../context/AppContext';
-import { useArchiveSchedules } from '../../hooks';
-import { SavedSchedule, TravelMode } from '../../types';
+import { SavedSchedule } from '../../types';
 import DirectionsMap from '../../components/DirectionsMap';
 import ScheduleTimelinePanel from '../../components/ScheduleTimelinePanel';
-import SaveScheduleDialog from '../../components/SaveScheduleDialog';
 import NavbarColumn from '../../components/NavbarColumn';
 import LoadingScreen from '../../components/LoadingScreen';
-import { Button } from '../../components/Button';
-import { Bookmark } from 'lucide-react';
+import { TRAVEL_MODES } from '../../constants/common';
 import './index.css';
 
-import { DEFAULT_MAP_CENTER, TRAVEL_MODES } from '../../constants/common';
+// Default location (New York) as fallback
+const DEFAULT_CENTER = { lat: 40.7128, lng: -74.0060 };
 
 const SchedulePage: React.FC = () => {
-  const { currentSchedule, favoritePlaces, sourceArchiveList } = useAppContext();
+  const { currentSchedule, favoritePlaces } = useAppContext();
   const navigate = useNavigate();
   const location = useLocation();
-  const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
+  const [mapCenter, setMapCenter] = useState(DEFAULT_CENTER);
   const [travelMode, setTravelMode] = useState("walking");
   const [viewingSavedSchedule, setViewingSavedSchedule] = useState<SavedSchedule | null>(null);
-  const [hasScheduleBeenSaved, setHasScheduleBeenSaved] = useState(false);
   
-  // Archive schedule management
-  const archiveSchedules = useArchiveSchedules();
-
   // Check if we're viewing a saved schedule from navigation state
   useEffect(() => {
     const savedSchedule = location.state?.savedSchedule as SavedSchedule;
@@ -54,11 +48,6 @@ const SchedulePage: React.FC = () => {
       setTravelMode(savedSchedule.metadata.travel_mode);
     }
   }, [location.state]);
-
-  // Reset save state when current schedule changes (new schedule generated)
-  useEffect(() => {
-    setHasScheduleBeenSaved(false);
-  }, [currentSchedule]);
 
   // Redirect to map if no schedule and not viewing saved schedule
   useEffect(() => {
@@ -101,24 +90,6 @@ const SchedulePage: React.FC = () => {
     if (currentSchedule && currentSchedule.items.length > 0) {
       setTravelMode(newMode);
     }
-  };
-
-  // Handle save schedule button click - only available for current schedules
-  const handleSaveSchedule = async () => {
-    if (!currentSchedule || !sourceArchiveList) {
-      console.error('No current schedule or source list to save to');
-      return;
-    }
-    
-    // Open save dialog with the source archive list
-    archiveSchedules.openSaveDialog(sourceArchiveList);
-  };
-
-  // Handle successful schedule save
-  const handleScheduleSaved = async () => {
-    setHasScheduleBeenSaved(true);
-    // Could show a toast notification here
-    navigate('/lists', { state: { refreshLists: true } });
   };
 
   // Get the schedule to display (either current or saved)
@@ -164,55 +135,7 @@ const SchedulePage: React.FC = () => {
     <div className="schedule-page-content">
       <NavbarColumn />
 
-      {/* Save Schedule Dialog - only for current schedules */}
-      {!isViewingSaved && currentSchedule && (
-        <SaveScheduleDialog
-          open={archiveSchedules.saveDialogOpen}
-          onClose={archiveSchedules.closeSaveDialog}
-          onSave={async (options) => {
-            await archiveSchedules.saveScheduleToArchive(options);
-            handleScheduleSaved();
-          }}
-          selectedList={archiveSchedules.selectedList}
-          loading={archiveSchedules.isSavingSchedule}
-          error={archiveSchedules.error}
-          scheduleStartTime={currentSchedule.items[0]?.start_time || '09:00'}
-          scheduleEndTime={currentSchedule.items[currentSchedule.items.length - 1]?.end_time || '19:00'}
-          defaultName={sourceArchiveList ? `${sourceArchiveList.name} Schedule` : ''}
-          originalTravelMode={travelMode as TravelMode}
-        />
-      )}
-      
       <div className="schedule-container-wrapper">
-        {/* Schedule Header with Actions */}
-        <div className="schedule-header-actions">
-          {/* Save button only for current schedules with source list */}
-          {!isViewingSaved && currentSchedule && sourceArchiveList && (
-            <Button
-              variant={hasScheduleBeenSaved ? "secondary" : "primary"}
-              size="md"
-              onClick={handleSaveSchedule}
-              className="save-schedule-button"
-              disabled={hasScheduleBeenSaved}
-            >
-              <Bookmark size={16} />
-              {hasScheduleBeenSaved ? "Saved to" : "Save to"} "{sourceArchiveList.name}"
-            </Button>
-          )}
-
-          {/* Show schedule info for saved schedules */}
-          {isViewingSaved && (
-            <>
-              <span className="saved-schedule-name">
-                {viewingSavedSchedule.metadata.name}
-              </span>
-              <span className="saved-schedule-date">
-                Saved {new Date(viewingSavedSchedule.metadata.created_at).toLocaleDateString()}
-              </span>
-            </>
-          )}
-        </div>
-        
         <div className="schedule-main-content">
           <div className="schedule-left-panel">
             {/* AI Day Overview */}
@@ -260,6 +183,7 @@ const SchedulePage: React.FC = () => {
             travelMode={travelMode} 
             schedule={displaySchedule}
             isViewingSaved={isViewingSaved}
+            savedScheduleName={viewingSavedSchedule?.metadata.name}
           />
         </div>
       </div>

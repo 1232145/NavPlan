@@ -6,6 +6,7 @@ from google.auth.transport import requests as grequests
 from typing import Dict, Any
 from utils.auth import get_current_user
 from config import GOOGLE_CLIENT_ID, API_PREFIX
+from services.user_service import user_service
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -31,6 +32,13 @@ async def google_auth(request: Request):
             "name": idinfo.get("name"),
             "picture": idinfo.get("picture"),
         }
+        
+        # Initialize new user with example list (this will only add if they don't have it)
+        try:
+            await user_service.ensure_user_has_example_list(user["id"])
+        except Exception as e:
+            logger.warning(f"Failed to add example list to user {user['id']}: {e}")
+        
         # Return user data with token for frontend to store
         return JSONResponse({
             "user": user,
