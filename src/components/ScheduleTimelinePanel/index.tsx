@@ -5,19 +5,12 @@ import { Schedule, TravelMode } from '../../types';
 import { Button } from '../Button';
 import SaveScheduleDialog from '../SaveScheduleDialog';
 import { Bookmark } from 'lucide-react';
+import { TRAVEL_MODES } from '../../constants/common';
 import './index.css';
 import { MdLocationOn, MdCategory } from 'react-icons/md';
 
 // Custom marker colors for better visibility
 const markerColors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#FF9800', '#9C27B0', '#795548'];
-
-// Travel mode icons
-const TRAVEL_MODE_ICONS: { [key: string]: string } = {
-  "walking": "🚶",
-  "bicycling": "🚲",
-  "driving": "🚗",
-  "transit": "🚆",
-};
 
 // Place type mapping to more readable formats
 const PLACE_TYPE_LABELS: { [key: string]: string } = {
@@ -182,7 +175,7 @@ const ScheduleTimelinePanel: React.FC<ScheduleTimelinePanelProps> = ({
             {item.travel_to_next && (
               <div className="travel-segment-card">
                 <div className="travel-infor">
-                  <i className="travel-icon">{TRAVEL_MODE_ICONS[travelMode] || TRAVEL_MODE_ICONS["walking"]}</i>
+                  <i className="travel-icon">{TRAVEL_MODES.find(mode => mode.value === travelMode)?.icon || TRAVEL_MODES[0].icon}</i>
                   <div className="travel-details">
                     <div>{item.travel_to_next.duration.text} ({item.travel_to_next.distance.text})</div>
                   </div>

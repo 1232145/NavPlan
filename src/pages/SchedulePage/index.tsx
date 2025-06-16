@@ -25,18 +25,11 @@ import DirectionsMap from '../../components/DirectionsMap';
 import ScheduleTimelinePanel from '../../components/ScheduleTimelinePanel';
 import NavbarColumn from '../../components/NavbarColumn';
 import LoadingScreen from '../../components/LoadingScreen';
+import { TRAVEL_MODES } from '../../constants/common';
 import './index.css';
 
 // Default location (New York) as fallback
 const DEFAULT_CENTER = { lat: 40.7128, lng: -74.0060 };
-
-// Travel mode options
-const TRAVEL_MODES = [
-  { value: "walking", label: "Walking", icon: "🚶" },
-  { value: "driving", label: "Driving", icon: "🚗" },
-  { value: "bicycling", label: "Bicycling", icon: "🚲" },
-  { value: "transit", label: "Transit", icon: "🚆" }
-];
 
 const SchedulePage: React.FC = () => {
   const { currentSchedule, favoritePlaces } = useAppContext();

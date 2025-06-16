@@ -1,15 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { ArchivedList, SavedSchedule } from '../../types';
 import { Calendar, Star, Clock, MapPin, ChevronUp, ChevronDown } from 'lucide-react';
+import { TRAVEL_MODES } from '../../constants/common';
 import './index.css';
-
-// Travel mode icons
-const TRAVEL_MODE_ICONS: { [key: string]: string } = {
-  "walking": "🚶",
-  "bicycling": "🚲", 
-  "driving": "🚗",
-  "transit": "🚆",
-};
 
 interface ScheduleSlotsProps {
   list: ArchivedList;
@@ -91,7 +84,7 @@ const ScheduleSlots: React.FC<ScheduleSlotsProps> = ({
         
         <div className="meta-item">
           <span className="travel-mode">
-            {TRAVEL_MODE_ICONS[schedule.metadata.travel_mode]} {schedule.metadata.travel_mode}
+            {TRAVEL_MODES.find(mode => mode.value === schedule.metadata.travel_mode)?.icon || TRAVEL_MODES[0].icon} {schedule.metadata.travel_mode}
           </span>
         </div>
       </div>
