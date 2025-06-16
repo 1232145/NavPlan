@@ -258,24 +258,26 @@ const LocationBasedExploration: React.FC = () => {
 
   const handleGenerateFromLocation = async () => {
     setIsGenerating(true);
-    setLocationStatus('Requesting location permission...');
+    setLocationStatus('Opening AI recommendations setup...');
     
     try {
+      // Try to get current location but don't require it since user can choose custom location
       if (!currentLocation) {
-        await requestLocationPermission();
-        if (!currentLocation) {
-          throw new Error('Location permission denied');
+        setLocationStatus('Getting your current location (optional)...');
+        try {
+          await requestLocationPermission();
+        } catch (error) {
+          console.log('Current location not available, user can choose custom location');
         }
       }
       
-      setLocationStatus('Location found! Please choose your schedule preferences...');
-      setIsGenerating(false);
       setLocationStatus('');
+      setIsGenerating(false);
       setScheduleDialogOpen(true);
       
     } catch (error) {
-      console.error('Location error:', error);
-      setLocationStatus('Failed to get current location. Please enable location permissions and try again.');
+      console.error('Error opening AI recommendations:', error);
+      setLocationStatus('Failed to open recommendations. Please try again.');
       setTimeout(() => {
         setIsGenerating(false);
         setLocationStatus('');
@@ -288,22 +290,41 @@ const LocationBasedExploration: React.FC = () => {
   };
 
   const handleScheduleDialogConfirm = async (options: ScheduleGenerationOptions) => {
-    if (!currentLocation) return;
-    
     try {
       setScheduleDialogOpen(false);
       
+      // Determine which location to use - simplified logic
+      let targetLatitude: number;
+      let targetLongitude: number;
+      
+      if (options.customLocation) {
+        // Use custom location selected by user
+        targetLatitude = options.customLocation.latitude;
+        targetLongitude = options.customLocation.longitude;
+      } else {
+        // Use current location (fallback to requesting if not available)
+        if (!currentLocation) {
+          await requestLocationPermission();
+          if (!currentLocation) {
+            throw new Error('Location permission denied');
+          }
+        }
+        targetLatitude = currentLocation.lat;
+        targetLongitude = currentLocation.lng;
+      }
+      
       // Generate location-based schedule with user preferences
       await generateLocationBasedSchedule(
-        currentLocation.lat,
-        currentLocation.lng,
+        targetLatitude,
+        targetLongitude,
         {
           radius_meters: 5000,
           travel_mode: "walking",
           start_time: options.startTime,
           end_time: options.endTime,
           prompt: options.prompt,
-          includeCurrentLocation: options.includeCurrentLocation
+          includeCurrentLocation: options.includeCurrentLocation,
+          locationName: options.customLocation?.address
         }
       );
       
@@ -326,7 +347,7 @@ const LocationBasedExploration: React.FC = () => {
           <Sparkles size={28} />
         </div>
         <h3>No place in mind?</h3>
-        <p>Let AI discover amazing places near you and create the perfect day schedule.</p>
+        <p>Let AI discover amazing places anywhere in the world and create the perfect day schedule.</p>
         
         {locationStatus && (
           <div className="location-status">
@@ -342,7 +363,7 @@ const LocationBasedExploration: React.FC = () => {
           className="location-exploration-button"
         >
           <MapPin size={16} />
-          {isGenerating ? 'Getting your location...' : 'Try AI Recommendations'}
+          {isGenerating ? 'Opening setup...' : 'Try AI Recommendations'}
         </Button>
       </div>
 
@@ -352,7 +373,7 @@ const LocationBasedExploration: React.FC = () => {
         onClose={handleScheduleDialogClose}
         onConfirm={handleScheduleDialogConfirm}
         title="AI Recommendations Setup"
-        description="AI will discover amazing places near your location and create an optimized schedule."
+        description="AI will discover amazing places at your chosen location and create an optimized schedule."
         isLocationBased={true}
       />
     </>

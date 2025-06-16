@@ -5,9 +5,10 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import { Button } from '../Button';
-import { Clock, Info, ListChecks, Settings, Coffee, Utensils, Building, TreePine, ShoppingBag, Wine, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Clock, Info, ListChecks, Settings, Coffee, Utensils, Building, TreePine, ShoppingBag, Wine, ChevronRight, ChevronLeft, MapPin } from 'lucide-react';
 import { useAppContext } from '../../context/AppContext';
-import { Place } from '../../types';
+import { Place, Coordinates } from '../../types';
+import { MapService } from '../../services/mapService';
 import './index.css';
 
 export interface UserPreferences {
@@ -23,6 +24,11 @@ export interface ScheduleGenerationOptions {
   prompt: string;
   includeCurrentLocation?: boolean;
   preferences?: UserPreferences;
+  customLocation?: {
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
 }
 
 interface ScheduleGenerationDialogProps {
@@ -81,6 +87,22 @@ const hasMealPlaces = (places: Place[]): boolean => {
   });
 };
 
+const isCurrentLocationNearArchiveList = (currentLocation: Coordinates | null, places: Place[]): boolean => {
+  if (!currentLocation || !places || places.length === 0) return false;
+  
+  // Calculate average center of archived places
+  const avgLat = places.reduce((sum, place) => sum + place.location.lat, 0) / places.length;
+  const avgLng = places.reduce((sum, place) => sum + place.location.lng, 0) / places.length;
+  
+  // Calculate distance between current location and center of archived places
+  const distance = Math.sqrt(
+    Math.pow(currentLocation.lat - avgLat, 2) + Math.pow(currentLocation.lng - avgLng, 2)
+  );
+  
+  // If within ~50km (roughly 0.45 degrees), consider it the same area
+  return distance < 0.45;
+};
+
 const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
   open,
   onClose,
@@ -100,6 +122,48 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
   const [prompt, setPrompt] = useState('');
   const [includeCurrentLocation, setIncludeCurrentLocation] = useState(true);
   
+  // Location settings - REUSED for both AI recommendations and archived list starting points
+  const [isCustomLocation, setIsCustomLocation] = useState<boolean>(false);
+  const [customLocationName, setCustomLocationName] = useState<string>('');
+  const [customLocationCoords, setCustomLocationCoords] = useState<{lat: number, lng: number} | null>(null);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<Place[]>([]);
+  
+  // Auto-search when user types (debounced)
+  useEffect(() => {
+    const searchLocations = async () => {
+      const query = customLocationName.trim();      
+      if (!isCustomLocation || query.length < 3) {
+        setLocationSuggestions([]);
+        setCustomLocationCoords(null);
+        return;
+      }
+      
+      setIsSearchingLocation(true);
+      try {
+        const results = await MapService.searchPlaces(query);
+        setLocationSuggestions(results.slice(0, 5)); // Show top 5 suggestions
+      } catch (error) {
+        console.error('Error searching location:', error);
+        setLocationSuggestions([]);
+      } finally {
+        setIsSearchingLocation(false);
+      }
+    };
+
+    const timeoutId = setTimeout(searchLocations, 300); // Debounce 300ms
+    return () => clearTimeout(timeoutId);
+  }, [customLocationName, isCustomLocation]);
+
+  const selectLocation = (place: Place) => {
+    setCustomLocationName(place.address || place.name);
+    setCustomLocationCoords({
+      lat: place.location.lat,
+      lng: place.location.lng
+    });
+    setLocationSuggestions([]);
+  };
+  
   // Advanced preferences (Step 2)
   const [mustInclude, setMustInclude] = useState<string[]>([]);
   const [balanceMode, setBalanceMode] = useState<'focused' | 'balanced' | 'diverse'>('balanced');
@@ -112,6 +176,7 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
   const maxAvailablePlaces = archiveListPlaces ? archiveListPlaces.length : 12;
   const minPlaces = Math.min(3, maxAvailablePlaces);
   const defaultMaxPlaces = Math.min(12, maxAvailablePlaces);
+  const isCurrentLocationNearList = isCurrentLocationNearArchiveList(currentLocation, archiveListPlaces || []);
 
   // Update maxPlaces when dialog opens or archive list changes
   useEffect(() => {
@@ -128,6 +193,10 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
     setEndTime('19:00');
     setPrompt('');
     setIncludeCurrentLocation(true);
+    setIsCustomLocation(false);
+    setCustomLocationName('');
+    setCustomLocationCoords(null);
+    setLocationSuggestions([]);
     setMustInclude([]);
     setBalanceMode('balanced');
     setMaxPlaces(defaultMaxPlaces);
@@ -135,6 +204,12 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
   };
 
   const handleConfirm = () => {
+    // Validate custom location if selected
+    if (isCustomLocation && (!customLocationName.trim() || !customLocationCoords)) {
+      alert('Please select a location from the search results');
+      return;
+    }
+
     const preferences: UserPreferences = {
       must_include: mustInclude,
       balance_mode: balanceMode,
@@ -146,8 +221,13 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
       startTime,
       endTime,
       prompt,
-      includeCurrentLocation,
-      preferences: mustInclude.length > 0 || mealRequirements ? preferences : undefined
+      includeCurrentLocation: (isLocationBased && !isCustomLocation) || (!isLocationBased && !isCustomLocation && isCurrentLocationNearList) ? includeCurrentLocation : false,
+      preferences: mustInclude.length > 0 || mealRequirements ? preferences : undefined,
+      customLocation: isCustomLocation && customLocationCoords ? {
+        address: customLocationName,
+        latitude: customLocationCoords.lat,
+        longitude: customLocationCoords.lng
+      } : undefined
     });
   };
 
@@ -161,10 +241,16 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
 
   const getDefaultDescription = () => {
     if (isLocationBased) {
-      return "AI will discover amazing places near your location and create an optimized schedule.";
+      if (isCustomLocation && customLocationName) {
+        return `AI will discover amazing places in ${customLocationName} and create an optimized schedule.`;
+      }
+      return "AI will discover amazing places near your current location and create an optimized schedule.";
     }
     if (placeCount) {
-      return `Generating a schedule for ${placeCount} places. Our AI will optimize your day based on locations and preferences.`;
+      const startingPointText = isCustomLocation && customLocationName 
+        ? ` starting from ${customLocationName}` 
+        : '';
+      return `Generating a schedule for ${placeCount} places${startingPointText}. Our AI will optimize your day based on locations and preferences.`;
     }
     return "Our AI will optimize your day based on locations and preferences.";
   };
@@ -199,6 +285,195 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
         </div>
       </div>
       
+      {isLocationBased && (
+        <>
+          <p className="schedule-dialog-label">
+            <MapPin size={16} /> Choose location for recommendations:
+          </p>
+          <div className="location-mode-selector">
+            <label className="location-mode-option">
+              <input
+                type="radio"
+                name="locationMode"
+                value="current"
+                checked={!isCustomLocation}
+                onChange={() => {
+                  setIsCustomLocation(false);
+                  setCustomLocationName('');
+                  setCustomLocationCoords(null);
+                  setLocationSuggestions([]);
+                }}
+              />
+              <div className="location-mode-content">
+                <span className="location-mode-label">Use my current location</span>
+                <span className="location-mode-description">
+                  {currentLocation ? '✓ Current location available' : 'Location will be requested'}
+                </span>
+              </div>
+            </label>
+            
+            <label className="location-mode-option">
+              <input
+                type="radio"
+                name="locationMode"
+                value="custom"
+                checked={isCustomLocation}
+                onChange={() => {
+                  setIsCustomLocation(true);
+                  if (customLocationName === '') {
+                    setCustomLocationName('');
+                  }
+                }}
+              />
+              <div className="location-mode-content">
+                <span className="location-mode-label">Choose a different city/location</span>
+                <span className="location-mode-description">Search for any city or location worldwide</span>
+              </div>
+            </label>
+          </div>
+
+          {isCustomLocation && (
+            <div>
+              <div className="input-with-suggestions">
+                <input
+                  type="text"
+                  placeholder="Enter city or location (e.g., Paris, Tokyo, New York)"
+                  value={customLocationName}
+                  onChange={(e) => setCustomLocationName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && locationSuggestions.length > 0) {
+                      selectLocation(locationSuggestions[0]);
+                    }
+                  }}
+                  required
+                />
+                {isSearchingLocation && (
+                  <div className="search-loading">🔍</div>
+                )}
+                
+                {locationSuggestions.length > 0 && (
+                  <div className="location-suggestions">
+                    {locationSuggestions.map((place, index) => (
+                      <div
+                        key={index}
+                        className="suggestion-item"
+                        onClick={() => selectLocation(place)}
+                      >
+                        <span className="suggestion-name">{place.name}</span>
+                        <span className="suggestion-address">{place.address}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {customLocationCoords && (
+                <div className="selected-location">
+                  ✓ Selected: {customLocationName}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+
+      {!isLocationBased && (
+        <>
+          <p className="schedule-dialog-label">
+            <MapPin size={16} /> Starting point (optional):
+          </p>
+          <div className="location-mode-selector">
+            <label className="location-mode-option">
+              <input
+                type="radio"
+                name="startingPointMode"
+                value="none"
+                checked={!isCustomLocation}
+                onChange={() => {
+                  setIsCustomLocation(false);
+                  setCustomLocationName('');
+                  setCustomLocationCoords(null);
+                  setLocationSuggestions([]);
+                }}
+              />
+              <div className="location-mode-content">
+                <span className="location-mode-label">
+                  {isCurrentLocationNearList ? "Use my current location" : "No specific starting point"}
+                </span>
+                <span className="location-mode-description">
+                  {isCurrentLocationNearList 
+                    ? (currentLocation ? '✓ Current location available' : 'Location will be requested')
+                    : "AI will optimize the route without a fixed starting location"
+                  }
+                </span>
+              </div>
+            </label>
+            
+            <label className="location-mode-option">
+              <input
+                type="radio"
+                name="startingPointMode"
+                value="custom"
+                checked={isCustomLocation}
+                onChange={() => {
+                  setIsCustomLocation(true);
+                  if (customLocationName === '') {
+                    setCustomLocationName('');
+                  }
+                }}
+              />
+              <div className="location-mode-content">
+                <span className="location-mode-label">Add custom starting point</span>
+                <span className="location-mode-description">Choose where you want to start your day</span>
+              </div>
+            </label>
+          </div>
+
+          {isCustomLocation && (
+            <div>
+              <div className="input-with-suggestions">
+                <input
+                  type="text"
+                  placeholder="Enter starting location (e.g., hotel, address, landmark)"
+                  value={customLocationName}
+                  onChange={(e) => setCustomLocationName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && locationSuggestions.length > 0) {
+                      selectLocation(locationSuggestions[0]);
+                    }
+                  }}
+                  required
+                />
+                {isSearchingLocation && (
+                  <div className="search-loading">🔍</div>
+                )}
+                
+                {locationSuggestions.length > 0 && (
+                  <div className="location-suggestions">
+                    {locationSuggestions.map((place, index) => (
+                      <div
+                        key={index}
+                        className="suggestion-item"
+                        onClick={() => selectLocation(place)}
+                      >
+                        <span className="suggestion-name">{place.name}</span>
+                        <span className="suggestion-address">{place.address}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              
+              {customLocationCoords && (
+                <div className="selected-location">
+                  ✓ Starting point: {customLocationName}
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
+      
       <p className="schedule-dialog-label">
         <Info size={16} /> Custom preferences (optional):
       </p>
@@ -214,26 +489,25 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
         onChange={(e) => setPrompt(e.target.value)}
       />
 
-      <div className="schedule-location-option-container">
-        <div className="schedule-location-option">
-          <input 
-            type="checkbox" 
-            className="schedule-settings-checkbox"
-            checked={includeCurrentLocation} 
-            onChange={e => setIncludeCurrentLocation(e.target.checked)} 
-          />
-          <div className="schedule-location-option-content">
-            <span className="schedule-location-option-label">Include my current location as starting point</span>
-            <p className="schedule-location-option-description">
-              {isLocationBased 
-                ? "This will add your current location as the first place in the discovered route for better navigation."
-                : "This will add your current location as the first place in the route, making navigation more convenient."
-              }
-              {currentLocation ? ' ✓ Current location available' : ' (Location will be requested if needed)'}
-            </p>
+      {isLocationBased && !isCustomLocation && (
+        <div className="schedule-location-option-container">
+          <div className="schedule-location-option">
+            <input 
+              type="checkbox" 
+              className="schedule-settings-checkbox"
+              checked={includeCurrentLocation} 
+              onChange={e => setIncludeCurrentLocation(e.target.checked)} 
+            />
+            <div className="schedule-location-option-content">
+              <span className="schedule-location-option-label">Include my current location as starting point</span>
+              <p className="schedule-location-option-description">
+                This will add your current location as the first place in the discovered route for better navigation.
+                {currentLocation ? ' ✓ Current location available' : ' (Location will be requested if needed)'}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="schedule-summary-info">
         <div className="schedule-summary-icon"><ListChecks size={16} /></div>
@@ -294,16 +568,16 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
 
       <div className="schedule-advanced-options">
         {showMealOption && (
-          <div className="schedule-option-row">
-            <label className="schedule-meal-option">
-              <input
-                type="checkbox"
-                checked={mealRequirements}
-                onChange={(e) => setMealRequirements(e.target.checked)}
-              />
-              <span>Ensure meal coverage (breakfast, lunch, dinner based on schedule time)</span>
-            </label>
-          </div>
+        <div className="schedule-option-row">
+          <label className="schedule-meal-option">
+            <input
+              type="checkbox"
+              checked={mealRequirements}
+              onChange={(e) => setMealRequirements(e.target.checked)}
+            />
+            <span>Ensure meal coverage (breakfast, lunch, dinner based on schedule time)</span>
+          </label>
+        </div>
         )}
         
         <div className="schedule-option-row">
@@ -320,11 +594,11 @@ const ScheduleGenerationDialog: React.FC<ScheduleGenerationDialogProps> = ({
             />
           ) : (
             <input
-              id="max-places"
+            id="max-places"
               type="number"
               min={3}
               max={12}
-              value={maxPlaces}
+            value={maxPlaces} 
               onChange={(e) => setMaxPlaces(Math.min(12, Math.max(3, Number(e.target.value))))}
               className="schedule-max-places-input"
             />

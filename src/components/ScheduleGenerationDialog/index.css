@@ -75,6 +75,200 @@
   margin-bottom: 0;
 }
 
+/* Time Inputs */
+.time-inputs-container {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.time-input-group {
+  flex: 1;
+}
+
+.time-input-group p {
+  margin: 0 0 var(--space-2) 0;
+  font-weight: 500;
+  color: var(--color-secondary-700);
+  font-size: var(--text-sm);
+}
+
+/* Location Mode Selector */
+.location-mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.location-mode-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 2px solid var(--color-secondary-200);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: var(--transition-normal);
+  background: white;
+}
+
+.location-mode-option:hover {
+  border-color: var(--color-primary-300);
+  background: var(--color-primary-50);
+}
+
+.location-mode-option input[type="radio"]:checked + .location-mode-content {
+  color: var(--color-primary-700);
+}
+
+.location-mode-option input[type="radio"]:checked {
+  accent-color: var(--color-primary-500);
+}
+
+.location-mode-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.location-mode-label {
+  font-weight: 600;
+  font-size: var(--text-base);
+}
+
+.location-mode-description {
+  font-size: var(--text-sm);
+  color: var(--color-secondary-600);
+}
+
+.input-with-suggestions {
+  position: relative;
+}
+
+.input-with-suggestions input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--color-secondary-200);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
+  transition: var(--transition-normal);
+  background: white;
+}
+
+.input-with-suggestions input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
+}
+
+.input-with-suggestions input::placeholder {
+  color: var(--color-secondary-400);
+}
+
+.search-loading {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-secondary-500);
+  font-size: var(--text-sm);
+}
+
+.location-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid var(--color-secondary-200);
+  border-top: none;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: var(--shadow-lg);
+}
+
+.suggestion-item {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  transition: var(--transition-fast);
+  border-bottom: 1px solid var(--color-secondary-100);
+}
+
+.suggestion-item:hover {
+  background: var(--color-primary-50);
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-name {
+  display: block;
+  font-weight: 600;
+  color: var(--color-secondary-800);
+  font-size: var(--text-base);
+}
+
+.suggestion-address {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-secondary-600);
+  margin-top: var(--space-1);
+}
+
+.selected-location {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-success-50);
+  border: 1px solid var(--color-success-200);
+  border-radius: var(--radius-lg);
+  color: var(--color-success-700);
+  font-weight: 500;
+  font-size: var(--text-sm);
+}
+
+/* Location Option Container */
+.schedule-location-option-container {
+  margin: var(--space-4) 0;
+}
+
+.schedule-location-option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-secondary-50);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-secondary-200);
+}
+
+.schedule-settings-checkbox {
+  margin-top: var(--space-1);
+  accent-color: var(--color-primary-500);
+}
+
+.schedule-location-option-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.schedule-location-option-label {
+  font-weight: 600;
+  color: var(--color-secondary-800);
+  font-size: var(--text-base);
+}
+
+.schedule-location-option-description {
+  color: var(--color-secondary-600);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* Category Selection Grid */
 .schedule-categories-grid {
   display: grid;
@@ -208,6 +402,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  flex: 1;
 }
 
 .schedule-balance-label {
@@ -219,24 +414,25 @@
 .schedule-balance-description {
   color: var(--color-secondary-600);
   font-size: var(--text-sm);
+  line-height: 1.4;
 }
 
 /* Advanced Options */
 .schedule-advanced-options {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  background: var(--color-primary-50);
-  border: 1px solid var(--color-primary-200);
-  border-radius: var(--radius-xl);
+  gap: var(--space-4);
+  background: var(--color-secondary-50);
   padding: var(--space-5);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-secondary-200);
 }
 
 .schedule-option-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: var(--space-4);
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 
 .schedule-meal-option {
@@ -244,136 +440,72 @@
   align-items: center;
   gap: var(--space-3);
   cursor: pointer;
-  font-size: var(--text-base);
-  color: var(--color-secondary-700);
+  font-weight: 500;
+  color: var(--color-secondary-800);
 }
 
 .schedule-meal-option input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
   accent-color: var(--color-primary-500);
-}
-
-.schedule-max-places-select {
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-secondary-300);
-  border-radius: var(--radius-md);
-  background: white;
-  font-size: var(--text-sm);
-  min-width: 120px;
 }
 
 .schedule-max-places-input {
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-secondary-300);
-  border-radius: var(--radius-md);
-  background: white;
-  font-size: var(--text-sm);
+  border: 2px solid var(--color-secondary-200);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-base);
   width: 80px;
   text-align: center;
+  transition: var(--transition-normal);
 }
 
-/* Time Input Section */
-.time-inputs-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
+.schedule-max-places-input:focus {
+  outline: none;
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 3px var(--color-primary-100);
 }
 
-.time-input-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.time-input-group p {
-  margin: 0 0 var(--space-2) 0;
-  font-weight: 500;
-  color: var(--color-secondary-700);
-  font-size: var(--text-sm);
-}
-
-/* Location Option */
-.schedule-location-option-container {
-  background: var(--color-primary-50);
-  border: 1px solid var(--color-primary-200);
+/* Summary and Preview Info */
+.schedule-summary-info, .schedule-preview-info {
+  background: var(--color-secondary-50);
+  border: 1px solid var(--color-secondary-200);
   border-radius: var(--radius-xl);
   padding: var(--space-4);
-}
-
-.schedule-location-option {
   display: flex;
   align-items: flex-start;
   gap: var(--space-3);
 }
 
-.schedule-settings-checkbox {
-  width: 18px;
-  height: 18px;
-  margin-top: 3px;
-  accent-color: var(--color-primary-500);
-}
-
-.schedule-location-option-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.schedule-location-option-label {
-  font-weight: 600;
-  color: var(--color-secondary-800);
-  font-size: var(--text-base);
-}
-
-.schedule-location-option-description {
-  color: var(--color-secondary-600);
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  margin: 0;
-}
-
-/* Summary and Preview */
-.schedule-summary-info, .schedule-preview-info {
-  background: var(--color-primary-50);
-  border: 1px solid var(--color-primary-200);
-  border-radius: var(--radius-lg);
-  padding: var(--space-4);
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
 .schedule-summary-icon {
   background: var(--color-primary-100);
-  color: var(--color-primary-600);
   width: 36px;
   height: 36px;
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--color-primary-600);
   flex-shrink: 0;
+  margin-top: var(--space-1);
 }
 
 .schedule-summary-info p, .schedule-preview-info p {
   margin: 0;
+  color: var(--color-secondary-700);
   font-size: var(--text-sm);
   line-height: 1.5;
-  color: var(--color-secondary-700);
 }
 
 /* Dialog Actions */
 .schedule-dialog-actions {
-  padding: var(--space-4) var(--space-6) var(--space-6);
+  padding: var(--space-4) var(--space-6);
   gap: var(--space-3);
-  justify-content: space-between;
 }
 
 .schedule-dialog-navigation {
   display: flex;
   align-items: center;
-  gap: var(--space-5);
-  margin-right: var(--space-6);
+  gap: var(--space-3);
+  margin-left: auto;
 }
 
 .schedule-back-button, .schedule-next-button {
@@ -382,21 +514,17 @@
   gap: var(--space-2);
 }
 
-/* Stylish dialog action buttons */
 .schedule-dialog-actions .MuiButton-root,
 .schedule-dialog-actions button {
   border-radius: var(--radius-lg);
-  min-height: 40px;
   font-weight: 600;
-  font-size: var(--text-sm);
-  transition: all 0.2s ease;
-  margin-bottom: var(--space-4);
+  text-transform: none;
+  padding: var(--space-2) var(--space-4);
 }
 
 .schedule-dialog-actions .MuiButton-root:hover,
 .schedule-dialog-actions button:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
 }
 
 /* Responsive Design */
@@ -406,7 +534,7 @@
   }
   
   .time-inputs-container {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
   
   .schedule-option-row {
@@ -418,21 +546,19 @@
   .schedule-dialog-navigation {
     flex-direction: column;
     width: 100%;
-    gap: var(--space-2);
   }
   
   .schedule-dialog-actions {
     flex-direction: column;
-    align-items: stretch;
+    gap: var(--space-2);
   }
 }
 
-/* Change border radius of Dialog paper */
+/* Dialog Paper Overrides */
 .MuiDialog-paper.css-16htz67-MuiPaper-root-MuiDialog-paper {
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-2xl);
 }
 
-/* Reduce bottom padding of DialogContent after DialogTitle */
 .MuiDialogTitle-root + .css-kw13he-MuiDialogContent-root {
-  padding-bottom: 0;
+  padding-top: 0;
 } 
