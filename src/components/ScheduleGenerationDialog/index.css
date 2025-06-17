@@ -6,13 +6,16 @@
   padding: var(--space-6) var(--space-6) var(--space-2) var(--space-6);
 }
 
+.mui-dialog-content {
+  padding: 0 24px !important;
+}
+
 /* Schedule Dialog Content */
 .schedule-dialog-content {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-2);
-  min-height: 400px;
 }
 
 .schedule-dialog-header {
@@ -86,7 +89,6 @@
 }
 
 .time-input-group p {
-  margin: 0 0 var(--space-2) 0;
   font-weight: 500;
   color: var(--color-secondary-700);
   font-size: var(--text-sm);
@@ -422,7 +424,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  background: var(--color-secondary-50);
+  background: var(--color-primary-50);
   padding: var(--space-5);
   border-radius: var(--radius-xl);
   border: 1px solid var(--color-secondary-200);
@@ -466,12 +468,12 @@
 
 /* Summary and Preview Info */
 .schedule-summary-info, .schedule-preview-info {
-  background: var(--color-secondary-50);
+  background: var(--color-primary-50);
   border: 1px solid var(--color-secondary-200);
   border-radius: var(--radius-xl);
   padding: var(--space-4);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
 }
 
@@ -499,6 +501,7 @@
 .schedule-dialog-actions {
   padding: var(--space-4) var(--space-6);
   gap: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .schedule-dialog-navigation {
@@ -506,12 +509,14 @@
   align-items: center;
   gap: var(--space-3);
   margin-left: auto;
+  margin-right: var(--space-6);
 }
 
 .schedule-back-button, .schedule-next-button {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  margin-right: var(--space-1);
 }
 
 .schedule-dialog-actions .MuiButton-root,
@@ -519,7 +524,7 @@
   border-radius: var(--radius-lg);
   font-weight: 600;
   text-transform: none;
-  padding: var(--space-2) var(--space-4);
+  padding: var(--space-4) var(--space-4);
 }
 
 .schedule-dialog-actions .MuiButton-root:hover,
@@ -558,7 +563,3 @@
 .MuiDialog-paper.css-16htz67-MuiPaper-root-MuiDialog-paper {
   border-radius: var(--radius-2xl);
 }
-
-.MuiDialogTitle-root + .css-kw13he-MuiDialogContent-root {
-  padding-top: 0;
-} 

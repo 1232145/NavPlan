@@ -81,6 +81,11 @@ function mapNewPlaceToPlace(newPlace: any): Place {
 
 export const MapService = {
   searchPlaces: async (query: string, center?: Coordinates): Promise<Place[]> => {
+    // Clear cache if center coordinates are provided to ensure fresh location-based results
+    if (center && center.lat && center.lng) {
+      searchResultsCache.clear();
+    }
+    
     const cacheKey = JSON.stringify({ query, center });
     const cached = searchResultsCache.get(cacheKey);
     
@@ -93,11 +98,23 @@ export const MapService = {
       "Content-Type": "application/json",
     };
 
-    const data = {
+    const data: any = {
       textQuery: query,
-      maxResults: 10, // Max results to control costs and processing
       languageCode: "en"
     };
+
+    // Add location bias if center coordinates are provided
+    if (center && center.lat && center.lng) {
+      data.locationBias = {
+        circle: {
+          center: {
+            latitude: center.lat,
+            longitude: center.lng
+          },
+          radius: 10000 // 10km
+        }
+      };
+    }
 
     try {
       const response = await api.post(url, data, { headers });
@@ -135,10 +152,39 @@ export const MapService = {
     };
 
     const data: any = {
-      textQuery: type || "", // Use type as a text query instead
-      maxResults: 10,
+      locationRestriction: {
+        circle: {
+          center: {
+            latitude: center.lat,
+            longitude: center.lng
+          },
+          radius: radius
+        }
+      },
       languageCode: "en"
     };
+
+    // Add included types if specified
+    if (type) {
+      // Convert type query to proper Google Places API types
+      const typeMapping: { [key: string]: string[] } = {
+        'bakery': ['bakery'],
+        'restaurant': ['restaurant'],
+        'cafe': ['cafe'],
+        'gas_station': ['gas_station'],
+        'shopping': ['shopping_mall', 'store'],
+        'hospital': ['hospital'],
+        'pharmacy': ['pharmacy'],
+        'bank': ['bank'],
+        'atm': ['atm'],
+        'park': ['park'],
+        'gym': ['gym'],
+        'hotel': ['lodging']
+      };
+
+      const mappedTypes = typeMapping[type.toLowerCase()] || [type];
+      data.includedTypes = mappedTypes;
+    }
 
     try {
       const response = await api.post(url, data, { headers });

@@ -166,7 +166,6 @@ h6 { font-size: var(--text-base); }
 
 p {
   color: var(--color-secondary-600);
-  margin-bottom: var(--space-4);
 }
 
 @import './shared.css';
