@@ -24,19 +24,21 @@ class LocationRestrictionCircle(BaseModel):
     center: Coordinates
     radius: float
 
-# --- FIX HERE: Remove maxResults from SearchTextRequest ---
+class LocationRestriction(BaseModel):
+    circle: LocationRestrictionCircle
+
 class SearchTextRequest(BaseModel):
     text_query: str = Field(alias="textQuery")
     languageCode: str = "en"
     regionCode: str = "US"
-    locationRestriction: Optional[LocationRestrictionCircle] = None # Use Optional for clarity
+    locationRestriction: Optional[LocationRestriction] = None
+    locationBias: Optional[LocationRestriction] = None
 
-# --- FIX HERE: Remove maxResults from SearchNearbyRequest ---
 class SearchNearbyRequest(BaseModel):
-    locationRestriction: LocationRestrictionCircle
+    locationRestriction: LocationRestriction
     languageCode: str = "en"
     regionCode: str = "US"
-    includedTypes: Optional[list[str]] = None # Use Optional for clarity
+    includedTypes: Optional[list[str]] = None
 
 @router.post("/places:searchText")
 async def search_places_proxy(request_body: SearchTextRequest):
