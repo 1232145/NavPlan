@@ -152,8 +152,6 @@ def create_place_text_for_embedding(place: Dict[str, Any]) -> str:
     
     return " | ".join(parts)
 
-# Removed complex intent detection - using explicit user preferences instead
-
 async def preference_based_selection(places: List[Dict[str, Any]], preferences: Dict[str, Any], query: str = "") -> List[Dict[str, Any]]:
     """
     Simple, reliable place selection based on explicit user preferences.
@@ -171,15 +169,40 @@ async def preference_based_selection(places: List[Dict[str, Any]], preferences: 
         meal_requirements = preferences.get('meal_requirements', False)
         
         # Define category mappings
-        category_mapping = {
-            'restaurants': ['catering.restaurant', 'catering.fast_food'],
-            'cafes': ['catering.cafe'],
-            'museums': ['tourism.museum', 'tourism.attraction'],
-            'parks': ['leisure.park'],
-            'shopping': ['shop'],
-            'bars': ['catering.bar'],
-            'attractions': ['tourism.attraction', 'tourism.museum']
-        }
+        def categorize_place(place_category: str, place_type: str = "") -> str:
+            """Flexible categorization based on both category and placeType"""
+            if not place_category:
+                place_category = ""
+            if not place_type:
+                place_type = ""
+            
+            combined = f"{place_category} {place_type}".lower()
+            
+            # Restaurant matching
+            if any(term in combined for term in ['restaurant', 'fast_food', 'food', 'dining', 'meal', 'catering.restaurant', 'catering.fast_food']):
+                return 'restaurants'
+            
+            # Cafe matching  
+            if any(term in combined for term in ['cafe', 'coffee', 'catering.cafe']):
+                return 'cafes'
+            
+            # Museum/attraction matching
+            if any(term in combined for term in ['museum', 'gallery', 'attraction', 'tourism', 'landmark', 'monument']):
+                return 'museums'
+            
+            # Park matching
+            if any(term in combined for term in ['park', 'garden', 'outdoor', 'leisure.park', 'recreation']):
+                return 'parks'
+            
+            # Shopping matching
+            if any(term in combined for term in ['shop', 'store', 'mall', 'market', 'shopping', 'commercial']):
+                return 'shopping'
+            
+            # Bar matching
+            if any(term in combined for term in ['bar', 'pub', 'nightlife', 'club', 'catering.bar']):
+                return 'bars'
+            
+            return 'other'
         
         # Handle meal requirements - ensure restaurants are included
         if meal_requirements and 'restaurants' not in must_include:
@@ -235,16 +258,15 @@ async def preference_based_selection(places: List[Dict[str, Any]], preferences: 
         other_places = []
         
         for place in places:
-            place_category = place.get('category', 'unknown')
-            categorized = False
+            place_category = place.get('category', '')
+            place_type = place.get('placeType', '')
             
-            for user_category, db_categories in category_mapping.items():
-                if place_category in db_categories:
-                    places_by_category[user_category].append(place)
-                    categorized = True
-                    break
+            # Use flexible categorization
+            user_category = categorize_place(place_category, place_type)
             
-            if not categorized:
+            if user_category in places_by_category:
+                places_by_category[user_category].append(place)
+            else:
                 other_places.append(place)
         
         # Phase 1: Fill must-include categories first (prioritize meal requirements)
@@ -330,7 +352,7 @@ async def preference_based_selection(places: List[Dict[str, Any]], preferences: 
     except Exception as e:
         logger.error(f"Error in preference-based selection: {e}")
         return places[:12]  # Fallback to first 12 places
-
+    
 async def simple_vector_score(places: List[Dict[str, Any]], query: str) -> List[Dict[str, Any]]:
     """
     Lightweight vector scoring for places when user has a query.
